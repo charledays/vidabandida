@@ -100,7 +100,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:1000;display:flex;align-items:ce
 .price-stack{display:flex;align-items:baseline;gap:8px}
 .price-launch{font-family:var(--fb);font-size:15px;font-weight:500;color:var(--cream)}
 .price-official{font-family:var(--fb);font-size:12px;font-weight:300;color:rgba(240,235,225,.4);text-decoration:line-through}
-#modal-official{font-family:var(--fb);font-size:13px;font-weight:300;color:rgba(240,235,225,.4);text-decoration:line-through;margin-top:2px;display:none}
+#modal-official{font-family:var(--fb);font-size:13px;font-weight:300;color:rgba(240,235,225,.4);text-decoration:line-through;margin-top:6px;display:none}
 #modal-preventa-tag{font-family:var(--fb);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-top:3px;display:none}
 .hero-preventa{display:inline-flex;align-items:center;gap:9px;margin-top:1.25rem;padding:9px 15px;border:1px solid var(--accent);background:rgba(214,59,12,.08)}
 .hero-pv-dot{width:7px;height:7px;border-radius:50%;background:var(--accent);flex-shrink:0;animation:pvpulse 1.8s infinite}
@@ -121,7 +121,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:1000;display:flex;align-items:ce
 .modal-close{background:none;border:none;color:var(--muted);font-size:18px;cursor:crosshair;line-height:1;transition:color .15s}
 .modal-close:hover{color:var(--cream)}
 .modal-body{padding:1.5rem}
-.modal-notice{border-left:2px solid var(--accent);padding:8px 12px;margin-bottom:1.5rem;font-family:var(--fb);font-size:11px;font-weight:300;letter-spacing:.04em;color:var(--muted);line-height:1.7}
+.modal-notice{border-left:2px solid var(--accent);padding:8px 12px;margin-top:1rem;margin-bottom:1rem;font-family:var(--fb);font-size:11px;font-weight:300;letter-spacing:.04em;color:var(--muted);line-height:1.7}
 .form-group{margin-bottom:1.1rem}
 .form-label{display:block;font-family:var(--fb);font-size:9px;font-weight:300;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
 .form-input,.form-select,.form-textarea{width:100%;background:transparent;border:none;border-bottom:1px solid var(--border);font-family:var(--fb);font-size:14px;font-weight:300;color:var(--cream);padding:8px 0;outline:none;transition:border-color .15s;border-radius:0;appearance:none}
@@ -449,7 +449,6 @@ footer{border-top:1px solid var(--border);padding:2.5rem;display:grid;grid-templ
       </div>
     </div>
     <div class="modal-body" id="modal-body">
-      <div class="modal-notice" id="modal-notice">Entrega en <strong style="color:#F0EBE1">48 horas</strong>. Te contactamos por WhatsApp para coordinar pago y entrega.</div>
       <form onsubmit="submitOrder(event)">
         <div id="bandana-size-group" class="form-group" style="display:none">
           <label class="form-label">Tamaño</label>
@@ -465,6 +464,7 @@ footer{border-top:1px solid var(--border);padding:2.5rem;display:grid;grid-templ
             <option>S</option><option>M</option><option>L</option><option>XL</option>
           </select>
         </div>
+        <div class="modal-notice" id="modal-notice">Entrega en <strong style="color:#F0EBE1">48 horas</strong>. Te contactamos por WhatsApp para coordinar pago y entrega.</div>
         <button type="submit" class="form-submit">Agregar al carrito</button>
       </form>
     </div>
