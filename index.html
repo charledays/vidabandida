@@ -464,7 +464,6 @@ footer{border-top:1px solid var(--border);padding:2.5rem;display:grid;grid-templ
             <option>S</option><option>M</option><option>L</option><option>XL</option>
           </select>
         </div>
-        <div class="modal-notice" id="modal-notice">Entrega en <strong style="color:#F0EBE1">48 horas</strong>. Te contactamos por WhatsApp para coordinar pago y entrega.</div>
         <button type="submit" class="form-submit">Agregar al carrito</button>
       </form>
     </div>
@@ -570,15 +569,12 @@ function openModal(n,p,noSize,productId){
   var _prod=(typeof products!=='undefined')?products.find(function(x){return x.id===productId;}):null;
   var _off=document.getElementById("modal-official");
   var _ptag=document.getElementById("modal-preventa-tag");
-  var _note=document.getElementById("modal-notice");
   if(_prod&&_prod.preventa){
     if(_off){_off.textContent=_prod.officialPrice;_off.style.display='block';}
     if(_ptag)_ptag.style.display='block';
-    if(_note)_note.innerHTML='<strong style="color:#F0EBE1">Reserva anticipada.</strong> Aseguras tu hoodie a precio de lanzamiento. La preventa cierra el domingo a medianoche y todas las reservas se entregan el <strong style="color:#F0EBE1">lunes del lanzamiento</strong>.';
   } else {
     if(_off)_off.style.display='none';
     if(_ptag)_ptag.style.display='none';
-    if(_note)_note.innerHTML='Entrega en <strong style="color:#F0EBE1">48 horas</strong>. Te contactamos por WhatsApp para coordinar pago y entrega.';
   }
   var _sizeSel=document.getElementById("size-select");
   if(_sizeSel){
