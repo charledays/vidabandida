@@ -856,7 +856,7 @@ function submitOrder(e) {
   const isBandana = document.getElementById('bandana-size-group').style.display !== 'none';
   const sizeEl = isBandana
     ? document.getElementById('bandana-size-select')
-    : e.target.querySelector('.form-select');
+    : document.getElementById('size-select');
   const size = sizeEl ? sizeEl.value : '';
   const name = document.getElementById('modal-name').textContent;
   const price = document.getElementById('modal-price').textContent;
