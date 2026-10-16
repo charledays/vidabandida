@@ -50,8 +50,7 @@
   .stage .status { position: absolute; inset: 0; display: grid; place-items: center; font-size: 13px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
 
   .panel { background: var(--panel); border-radius: 6px; padding: 14px; display: grid; gap: 14px; min-width: 0; }
-  .tabs { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; border-bottom: 1px solid var(--line); }
-  .tabs::-webkit-scrollbar { display: none; }
+  .tabs { display: flex; flex-wrap: wrap; gap: 2px 4px; border-bottom: 1px solid var(--line); }
   .tab { appearance: none; border: 0; background: none; font: 600 13px/1 var(--font-ui); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); padding: 10px 10px 11px; border-bottom: 2px solid transparent; margin-bottom: -1px; cursor: pointer; white-space: nowrap; }
   .tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--ink); }
   .tab:focus-visible, .sw:focus-visible, .btn:focus-visible, .opt:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
@@ -82,13 +81,47 @@
   .spec dt { font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); align-self: center; }
   .spec dd { margin: 0; font-weight: 600; min-width: 0; }
   .note { font-size: 12px; color: var(--muted); line-height: 1.45; max-width: 62ch; margin: 0; }
+  .product { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
+  .product > div { display: grid; gap: 2px; min-width: 0; }
+  .product-kicker { font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
+  .product b { font-size: 16px; line-height: 1.15; }
+  #product-price { font-size: 13px; color: var(--muted); }
+  .btn.buy { text-decoration: none; white-space: nowrap; padding: 12px 18px; }
+  @media (max-width: 820px) {
+    body { padding-block: 8px 16px; }
+    .stage { aspect-ratio: auto; height: 37svh; max-height: none; }
+    .stage .hint { display: none; }
+    .panel { padding: 12px; gap: 10px; }
+    .tabs { flex-wrap: nowrap; justify-content: space-between; }
+    .tab { padding: 8px 2px 9px; font-size: 11px; letter-spacing: 0.04em; }
+    .actions .btn { padding: 9px 12px; font-size: 11px; }
+    .swatches { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+    .sw { padding: 5px; font-size: 12px; grid-template-columns: 18px 1fr; }
+    .sw .chip { width: 18px; height: 18px; }
+    .opts { grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 6px; }
+    .opt { padding: 7px 8px; font-size: 11px; }
+    .opt small { display: none; }
+    .group { gap: 6px; }
+    .label { font-size: 10px; }
+    .spec, .note { display: none; }
+    /* every option on one line: label, then small chips; colours as dots */
+    .group.row { grid-template-columns: 76px minmax(0, 1fr); align-items: center; gap: 6px; }
+    .group.row .label code, .group.row .custom { display: none; }
+    .group.row .opts, .group.row .swatches { display: flex; flex-wrap: wrap; gap: 4px; }
+    .group.row .opt { padding: 6px 7px; font-size: 10px; letter-spacing: 0.03em; }
+    .group.row .sw { padding: 3px; grid-template-columns: 20px; border-radius: 50%; }
+    .group.row .sw .chip { width: 20px; height: 20px; }
+    .group.row .sw span:last-child { display: none; }
+    .upload { font-size: 11px; }
+    #panes > .group { gap: 8px !important; }
+  }
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 
 <div class="wrap">
   <header>
     <h1 class="wordmark"><span class="sr">vidabandida</span></h1>
-    <div class="meta"><span><b>OG BANDIT</b></span><span>Vestidor · prototipo</span></div>
+    <div class="meta"><span><b>OG BANDIT</b></span><span>Vestidor</span></div>
   </header>
 
   <section class="studio">
@@ -98,6 +131,10 @@
     </div>
 
     <div class="panel">
+      <div class="product">
+        <div><span class="product-kicker">Camiseta</span><b id="product-name"></b><span id="product-price">S/ 100</span></div>
+        <a class="btn buy" id="buy" href="/">Comprar</a>
+      </div>
       <div class="tabs" role="tablist" id="tabs"></div>
       <div id="panes"></div>
 
@@ -107,7 +144,7 @@
         <button class="btn" id="random" type="button">Combinación al azar</button>
         <button class="btn ghost" id="reset" type="button">Volver al original</button>
       </div>
-      <p class="note">Prototipo. La camiseta usa los colorways Chlorotype y el lettering oficial; los colores de short y zapatillas y las formas de los dos accesorios son de muestra hasta recibir los oficiales. Puedes probar tu propio logo en la pestaña Logo.</p>
+      <p class="note">Las camisetas son decoloradas a mano, una a una: cada pieza es única. Short, zapatillas y accesorios son para jugar con el look.</p>
     </div>
   </section>
 </div>
@@ -115,7 +152,8 @@
 <script type="importmap">
 { "imports": {
   "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
-  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/",
+  "three-mesh-bvh": "https://cdn.jsdelivr.net/npm/three-mesh-bvh@0.8.3/build/index.module.js"
 } }
 </script>
 <script type="module">
@@ -125,11 +163,19 @@ import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 import { DecalGeometry } from "three/addons/geometries/DecalGeometry.js";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
+import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
+import { computeBoundsTree, acceleratedRaycast } from "three-mesh-bvh";
+// fitting the accessories casts thousands of rays at the model: a bounding-volume tree makes each one cheap
+THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
+THREE.Mesh.prototype.raycast = acceleratedRaycast;
+const PHONE = matchMedia("(max-width: 820px)").matches;
 
 // ---------- catalogue (samples until the official colorways arrive) ----------
 const COLORS = {
   // Chlorotype colorways sampled from product photos: [name, fabric, matching lettering]
-  tee: [["Cloudy","#7fb6d1","#b5d8e6"],["Rosa viejo","#b97d86","#e3cfb8"],["Gris pizarra","#6d6e74","#d9d5bf"],["Verde petróleo","#1b262c","#9a928a"],["Negro verde","#0f241a","#b9421d"]],
+  // [name, fabric, matching lettering, product id in the vidabandida.art shop (null: ask on WhatsApp)]
+  tee: [["Gray Worker Chlorotype 002","#6d6e74","#d9d5bf",10],["Pink Press Chlorotype 002","#b97d86","#e3cfb8",11],
+        ["Space Steel Chlorotype 004","#1b262c","#9a928a",13],["Cloudy 003","#7fb6d1","#b5d8e6",12],["Chlorotype 001 Blackcat","#0f241a","#b9421d",null]],
   shorts: [["Negro","#19191b"],["Carbón","#3a3b3d"],["Khaki","#8b7b58"],["Verde militar","#4b5137"],["Arena","#b8a888"],["Azul denim","#2f405c"]],
   shoes: [["Crema","#e2dccd"],["Blanco","#f3f3f1"],["Negro","#1a1a1a"],["Gris","#9a9b98"],["Rojo","#8a1c1c"],["Arena","#c9b48e"]],
   logo: [["Celeste lavado","#b5d8e6"],["Crema","#e3cfb8"],["Hueso","#d9d5bf"],["Arena","#9a928a"],["Rojo óxido","#b9421d"],["Blanco","#f2f0ea"],["Negro","#121212"]],
@@ -141,11 +187,11 @@ const LOGOS = [["wordmark","vidabandida","Frente y espalda oficiales, de manga a
 // accessory slots: [state key, label, options [id, name, hint]]
 const SLOTS = [
   ["hat", "Cabeza", [["none","Nada",""],["cap","Gorra","Con isotipo"],["beanie","Beanie","Con isotipo"],["crown","Corona","Dorada"]]],
-  ["eyes", "Ojos", [["none","Nada",""],["sun","Lentes de sol",""],["ski","Lentes de ski",""]]],
-  ["phones", "Audífonos", [["none","Nada",""],["black","Negros",""],["silver","Plateados",""]]],
+  ["eyes", "Ojos", [["none","Nada",""],["sun","Sol","","Lentes de sol"],["ski","Ski","","Lentes de ski"]]],
+  ["phones", "Audífonos", [["none","Nada",""],["black","Negros","","Audífonos negros"],["silver","Plateados","","Audífonos plateados"]]],
   ["clava", "Cara", [["none","Nada",""],["on","Balaclava","Negra"]]],
-  ["chain", "Cuello", [["none","Nada",""],["gold","Cadena dorada",""],["silver","Cadena plateada",""]]],
-  ["watch", "Muñeca", [["none","Nada",""],["gold","Reloj dorado",""],["silver","Reloj plateado",""]]],
+  ["chain", "Cuello", [["none","Nada",""],["gold","Oro","","Cadena de oro"],["silver","Plata","","Cadena de plata"]]],
+  ["watch", "Muñeca", [["none","Nada",""],["gold","Oro","","Reloj de oro"],["silver","Plata","","Reloj de plata"]]],
 ];
 const DEFAULT = { tee:"#1b262c", shorts:"#19191b", shoes:"#e2dccd", logo:"wordmark", logoColor:"#9a928a", hat:"none", eyes:"none", phones:"none", clava:"none", chain:"none", watch:"none", accColor:"#1b262c", isoColor:"#9a928a", lensColor:"#ff7a1a", skiColor:"#f7a11d" };
 let state = { ...DEFAULT };
@@ -168,14 +214,14 @@ function nameOf(list, hex) { const f = list.find(([, h]) => h.toLowerCase() === 
 
 function swatchGroup(key, list, label, { custom = true, pair = null } = {}) {
   // pair: the state key that takes a colorway's second colour (the shirt's lettering, the cap's isotype)
-  const g = document.createElement("div"); g.className = "group";
+  const g = document.createElement("div"); g.className = key === "tee" ? "group" : "group row";   // rows pack tight on phones
   g.innerHTML = `<div class="label"><span>${label}</span><code data-hex="${key}"></code></div><div class="swatches"></div>` +
     (custom ? `<label class="custom" for="custom-${key}"><input type="color" id="custom-${key}"> Color personalizado</label>` : "");
   const box = g.querySelector(".swatches");
   for (const [n, h, letters] of list) {
     const b = document.createElement("button"); b.type = "button"; b.className = "sw"; b.dataset.key = key; b.dataset.hex = h;
     const chip = letters ? `linear-gradient(135deg, ${h} 0 55%, ${letters} 55% 100%)` : h;
-    b.innerHTML = `<span class="chip" style="background:${chip}"></span><span>${n}</span>`;
+    b.innerHTML = `<span class="chip" style="background:${chip}"></span><span>${n}</span>`; b.title = n;
     b.addEventListener("click", () => { if (letters && pair) state[pair] = letters; set(key, h); });
     box.appendChild(b);
   }
@@ -183,7 +229,7 @@ function swatchGroup(key, list, label, { custom = true, pair = null } = {}) {
   return g;
 }
 function optionGroup(key, list, label) {
-  const g = document.createElement("div"); g.className = "group";
+  const g = document.createElement("div"); g.className = "group row";
   g.innerHTML = `<div class="label"><span>${label}</span></div><div class="opts"></div>`;
   for (const [id, n, sub] of list) {
     const b = document.createElement("button"); b.type = "button"; b.className = "opt"; b.dataset.key = key; b.dataset.val = id;
@@ -193,21 +239,21 @@ function optionGroup(key, list, label) {
   return g;
 }
 const panes = {
-  tee: [swatchGroup("tee", COLORS.tee, "Colorway Chlorotype · camiseta y letras", { pair: "logoColor" })],
+  tee: [swatchGroup("tee", COLORS.tee, "Colorway · camiseta y letras", { custom: false, pair: "logoColor" })],
   logo: [optionGroup("logo", LOGOS, "Gráfico del pecho"), swatchGroup("logoColor", COLORS.logo, "Color del logo")],
   shorts: [swatchGroup("shorts", COLORS.shorts, "Color del short cargo")],
   shoes: [swatchGroup("shoes", COLORS.shoes, "Color de las zapatillas")],
   acc: [...SLOTS.map(([key, label, opts]) => optionGroup(key, opts, label)),
-        swatchGroup("lensColor", COLORS.lens, "Lentes de sol", { custom: false }),
-        swatchGroup("skiColor", COLORS.ski, "Lentes de ski", { custom: false }),
-        swatchGroup("accColor", COLORS.tee, "Gorra y beanie · colorways del polo", { custom: false, pair: "isoColor" })],
+        swatchGroup("lensColor", COLORS.lens, "Color sol", { custom: false }),
+        swatchGroup("skiColor", COLORS.ski, "Color ski", { custom: false }),
+        swatchGroup("accColor", COLORS.tee, "Color gorra", { custom: false, pair: "isoColor" })],
 };
 const up = document.createElement("label"); up.className = "upload"; up.htmlFor = "logo-file";
 up.innerHTML = `Sube tu logo (PNG con fondo transparente) <input type="file" id="logo-file" accept="image/png,image/svg+xml,image/webp">`;
 up.querySelector("input").addEventListener("change", e => {
   const f = e.target.files[0]; if (!f) return;
   const r = new FileReader();
-  r.onload = () => { const img = new Image(); img.onload = () => { uploadedImage = img; set("logo", "upload"); }; img.src = r.result; };
+  r.onload = () => { const img = new Image(); img.onload = () => { uploadedImage = img; uploadVersion++; set("logo", "upload"); }; img.src = r.result; };
   r.readAsDataURL(f);
 });
 panes.logo.splice(1, 0, up);
@@ -231,13 +277,22 @@ function syncUI() {
   document.querySelectorAll("code[data-hex]").forEach(c => c.textContent = state[c.dataset.hex].toUpperCase());
   for (const k of ["tee","shorts","shoes","logoColor"]) { const i = document.getElementById("custom-" + k); if (i) i.value = state[k]; }
   const logoName = LOGOS.find(l => l[0] === state.logo)[1];
-  const worn = SLOTS.filter(([k]) => state[k] !== "none").map(([k, , opts]) => opts.find(o => o[0] === state[k])[1]);
+  const worn = SLOTS.filter(([k]) => state[k] !== "none").map(([k, , opts]) => (o => o[3] ?? o[1])(opts.find(o => o[0] === state[k])));
+  syncProduct();
   document.getElementById("spec").innerHTML = `
     <dt>Camiseta</dt><dd>${nameOf(COLORS.tee, state.tee)}</dd>
     <dt>Logo</dt><dd>${state.logo === "none" ? "Sin logo" : logoName + " · " + nameOf(COLORS.logo, state.logoColor)}</dd>
     <dt>Short</dt><dd>${nameOf(COLORS.shorts, state.shorts)}</dd>
     <dt>Zapatillas</dt><dd>${nameOf(COLORS.shoes, state.shoes)}</dd>
     <dt>Accesorios</dt><dd>${worn.length ? worn.join(", ") : "Nada"}</dd>`;
+}
+function syncProduct() {
+  const cw = COLORS.tee.find(c => c[1].toLowerCase() === state.tee.toLowerCase());
+  document.getElementById("product-name").textContent = cw ? cw[0] : "Camiseta";
+  const buy = document.getElementById("buy");
+  buy.href = cw?.[3] ? `/?producto=${cw[3]}` :
+    "https://wa.me/51924946409?text=" + encodeURIComponent(`Hola, quiero la camiseta ${cw ? cw[0] : ""} (la vi en el OG Bandit).`);
+  buy.target = cw?.[3] ? "_self" : "_blank";
 }
 function set(key, val) { state[key] = val; syncUI(); apply(); if (key === "tee") showMove(); }   // a new shirt colour gets a move
 document.getElementById("reset").addEventListener("click", () => { state = { ...DEFAULT }; syncUI(); apply(); });
@@ -255,7 +310,7 @@ syncUI();
 // ---------- 3D ----------
 const stage = document.getElementById("stage"), statusEl = document.getElementById("status");
 const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setPixelRatio(Math.min(devicePixelRatio, PHONE ? 1.5 : 2));
 renderer.toneMapping = THREE.NeutralToneMapping; renderer.toneMappingExposure = 0.95;   // keeps product colours faithful
 renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 stage.prepend(renderer.domElement);
@@ -276,7 +331,7 @@ controls.addEventListener("start", () => controls.autoRotate = false);
 
 scene.add(new THREE.HemisphereLight(0xffffff, 0x8a8a86, 0.55));
 const key = new THREE.DirectionalLight(0xffffff, 1.6); key.position.set(7, 14, 10); key.castShadow = true;
-key.shadow.mapSize.set(2048, 2048); Object.assign(key.shadow.camera, { left: -8, right: 8, top: 14, bottom: -2, near: 1, far: 40 }); key.shadow.bias = -0.0004;
+key.shadow.mapSize.set(PHONE ? 1024 : 2048, PHONE ? 1024 : 2048); Object.assign(key.shadow.camera, { left: -8, right: 8, top: 14, bottom: -2, near: 1, far: 40 }); key.shadow.bias = -0.0004;
 scene.add(key);
 const rim = new THREE.DirectionalLight(0xffffff, 1.0); rim.position.set(-8, 9, -10); scene.add(rim);
 const floor = new THREE.Mesh(new THREE.CircleGeometry(12, 64), new THREE.ShadowMaterial({ opacity: 0.22 }));
@@ -284,6 +339,7 @@ floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; scene.add(floor);
 
 const parts = {};                                   // material name -> meshes (the model ships as separate pieces)
 let modelRoot = null, teeMesh = null, whiteMesh = null, decals = [], anchor = new THREE.Vector3(0, 10.4, -0.33);
+const headTargets = [], chestTargets = [];
 let mixer = null, current = null; const moves = {}, bones = {}, skinned = [], clock = new THREE.Clock();
 const accGroup = new THREE.Group(); scene.add(accGroup);
 const accMat = new THREE.MeshPhysicalMaterial({ color: state.accColor, roughness: 0.55, clearcoat: 0.25, clearcoatRoughness: 0.5 });
@@ -291,11 +347,33 @@ const accMat = new THREE.MeshPhysicalMaterial({ color: state.accColor, roughness
 // finish per piece: [roughness, clearcoat]. Vinyl toy parts are glossy, the clothes matte.
 const FINISH = { VB_TEE: [0.78, 0.04], VB_SHORTS: [0.74, 0.06], VB_SHOES: [0.55, 0.25], VB_SOLE: [0.5, 0.3], VB_OUTSOLE: [0.85, 0],
   VB_LACES: [0.8, 0], VB_PANDA_WHITE: [0.4, 0.4], VB_EYE_WHITE: [0.3, 0.6] };
+// the wash is laid on the shirt from its three axes (triplanar), in the shirt's own space, so it has no seams
+// where the UV islands meet and it moves with the cloth
+const washUniforms = { washMap: { value: null }, washOn: { value: 0 }, washScale: { value: 0.42 } };
+function withWash(m) {
+  m.onBeforeCompile = (sh) => {
+    Object.assign(sh.uniforms, washUniforms);
+    sh.vertexShader = sh.vertexShader
+      .replace("#include <common>", "#include <common>\nvarying vec3 vWashPos;\nvarying vec3 vWashNrm;")
+      .replace("#include <begin_vertex>", "#include <begin_vertex>\nvWashPos = position;\nvWashNrm = normal;");
+    sh.fragmentShader = sh.fragmentShader
+      .replace("#include <common>", "#include <common>\nuniform sampler2D washMap;\nuniform float washOn;\nuniform float washScale;\nvarying vec3 vWashPos;\nvarying vec3 vWashNrm;")
+      .replace("#include <map_fragment>", `#include <map_fragment>
+        if (washOn > 0.5) {
+          vec3 wb = pow(abs(normalize(vWashNrm)), vec3(4.0)); wb /= (wb.x + wb.y + wb.z);
+          vec3 p = vWashPos * washScale;
+          vec4 wc = texture2D(washMap, p.yz) * wb.x + texture2D(washMap, p.xz) * wb.y + texture2D(washMap, p.xy) * wb.z;
+          diffuseColor.rgb *= wc.rgb;
+        }`);
+  };
+  return m;
+}
 function vinyl(name, src) {
   const [roughness, clearcoat] = FINISH[name] ?? [0.32, 0.55];             // black vinyl: ears, patches, nose, fists
   const m = new THREE.MeshPhysicalMaterial({ color: src.color, roughness, clearcoat, clearcoatRoughness: 0.3, name, side: THREE.DoubleSide });
   if (src.normalMap) { m.normalMap = src.normalMap; m.normalScale.copy(src.normalScale); }     // fabric weave baked in Blender
   if (src.map && src.userData?.vb_painted) { m.map = src.map; m.color.set(0xffffff); m.userData.painted = true; }   // a painted garment keeps its texture
+  if (name === "VB_TEE") withWash(m);
   if (name === "VB_AIR") Object.assign(m, { transmission: 0.7, thickness: 0.3, roughness: 0.05, clearcoat: 1, ior: 1.4 });   // clear air unit
   return m;
 }
@@ -332,6 +410,14 @@ loadModel().then(gltf => {
   const hb = new THREE.Box3().setFromObject(whiteMesh);
   anchor.set((hb.min.x + hb.max.x) / 2, hb.max.y, HEAD.z - 0.04); HEAD.y = hb.max.y - 2.39; EYE_Y = HEAD.y - 0.05; NECK_Y = hb.min.y + 0.15;
   root.traverse(o => { if (o.isSkinnedMesh) skinned.push(o); if (o.isBone) bones[o.name.replace(/[^A-Za-z]/g, "")] = o; });
+  for (const n of ["VB_PANDA_WHITE", "VB_EARS", "VB_EYE_PATCH", "VB_EYE_WHITE", "VB_NOSE", "VB_FISTS"]) headTargets.push(...(parts[n] ?? []));
+  // the shirt is skinned (slow to ray-test): the chain is fitted against a still copy of it at rest
+  for (const m of parts.VB_TEE ?? []) {
+    const probe = new THREE.Mesh(m.geometry); probe.matrixAutoUpdate = false; probe.matrixWorld.copy(m.matrixWorld);
+    chestTargets.push(probe);
+  }
+  chestTargets.push(...headTargets);
+  for (const m of chestTargets) m.geometry.computeBoundsTree();
   mixer = new THREE.AnimationMixer(root);
   for (const clip of gltf.animations) moves[clip.name] = mixer.clipAction(clip);
   statusEl.remove(); resize(); apply();
@@ -464,7 +550,7 @@ const clavaMat = new THREE.MeshPhysicalMaterial({ color: 0x111112, roughness: 0.
 
 function frontZ(x, y) {
   // z of the model surface seen straight from the front (face relief, muzzle, chest)
-  const hit = modelRoot && new THREE.Raycaster(new THREE.Vector3(x, y, 30), new THREE.Vector3(0, 0, -1)).intersectObject(modelRoot, true)[0];
+  const hit = modelRoot && new THREE.Raycaster(new THREE.Vector3(x, y, 30), new THREE.Vector3(0, 0, -1)).intersectObjects(chestTargets, false)[0];
   return hit ? hit.point.z : HEAD.z + HEAD.rz;
 }
 function addIsotype(group, front, y, h) {
@@ -601,7 +687,7 @@ const smooth = (e0, e1, x) => { const t = Math.min(1, Math.max(0, (x - e0) / (e1
 function surfaceR(a, y) {
   // distance from the head axis to the model surface, looking in from angle a (0 = front) at height y
   const dir = new THREE.Vector3(Math.sin(a), 0, Math.cos(a)), centre = new THREE.Vector3(HEAD.x, y, HEAD.z);
-  const hit = new THREE.Raycaster(centre.clone().addScaledVector(dir, 20), dir.clone().negate()).intersectObject(modelRoot, true)[0];
+  const hit = new THREE.Raycaster(centre.clone().addScaledVector(dir, 20), dir.clone().negate()).intersectObjects(headTargets, false)[0];
   return hit ? hit.point.clone().sub(centre).dot(dir) : Math.hypot(dir.x * HEAD.rx, dir.z * HEAD.rz);
 }
 function rigidShell(a0, a1, range) {
@@ -792,14 +878,15 @@ function buildChain(g) {
     return new THREE.Vector3(2.3 * Math.sin(t), NECK_Y - 0.62 * Math.max(0, c) ** 2, HEAD.z + 2.08 * c + 0.12);
   };
   const link = new THREE.TorusGeometry(0.14, 0.05, 8, 18); link.scale(1.55, 1, 1); link.rotateY(Math.PI / 2);
-  const N = 72;
+  const N = 72, links = [], o = new THREE.Object3D();
   for (let i = 0; i < N; i++) {
     const t = i / N * Math.PI * 2, p = path(t), q = path(t + 0.01);
     if (Math.cos(t) < -0.2) continue;                                      // hidden behind the head anyway
     p.z = Math.max(p.z, frontZ(p.x, p.y) + 0.08 * Math.max(0, Math.cos(t)));
-    const m = new THREE.Mesh(link, mat); m.position.copy(p); m.lookAt(q); if (i % 2) m.rotateZ(Math.PI / 2);
-    g.add(m);
+    o.position.copy(p); o.rotation.set(0, 0, 0); o.lookAt(q); if (i % 2) o.rotateZ(Math.PI / 2); o.updateMatrix();
+    links.push(link.clone().applyMatrix4(o.matrix));
   }
+  g.add(new THREE.Mesh(mergeGeometries(links), mat));
 }
 
 function buildWatch(g) {
@@ -848,18 +935,64 @@ function buildWatch(g) {
   crownBtn.position.copy(base).addScaledVector(axis, 0.64); g.add(crownBtn);
 }
 
-let attached = [];
-function buildAccessory() {
-  // built in world space at rest, then handed to the bone they ride on (head, chest, left hand)
-  for (const g of attached) g.parent?.remove(g);
-  attached = [];
-  if (!modelRoot) return;
-  const onHead = new THREE.Group(), onChest = new THREE.Group(), onWrist = new THREE.Group();
-  buildHat(onHead); buildEyes(onHead); buildPhones(onHead); buildBalaclava(onHead); buildChain(onChest); buildWatch(onWrist);
-  for (const [g, bone] of [[onHead, "head"], [onChest, "chest"], [onWrist, "handL"]]) {
-    g.traverse(o => { if (o.isMesh) o.castShadow = true; });
-    scene.add(g); (bones[bone] ?? scene).attach(g); attached.push(g);
+// each accessory is built in world space at rest, then handed to the bone it rides on; only the ones whose
+// options changed are rebuilt (fitting them is the slow part)
+const SLOTS_3D = { hat: [buildHat, "head", ["hat", "accColor", "isoColor"]], eyes: [buildEyes, "head", ["eyes", "lensColor", "skiColor", "clava"]],
+  phones: [buildPhones, "head", ["phones"]], clava: [buildBalaclava, "head", ["clava"]], chain: [buildChain, "chest", ["chain"]],
+  watch: [buildWatch, "handL", ["watch"]] };
+const built = {};
+const slotSig = (s) => SLOTS_3D[s][2].map(k => state[k]).join("|");
+const staleSlots = () => modelRoot ? Object.keys(SLOTS_3D).filter(s => built[s]?.sig !== slotSig(s)) : [];
+function rebuildSlot(s) {
+  const [build, bone] = SLOTS_3D[s];
+  if (built[s]) { built[s].g.parent?.remove(built[s].g); built[s].g.traverse(o => o.isMesh && o.geometry.dispose()); }
+  const g = new THREE.Group(); build(g);
+  g.traverse(o => { if (o.isMesh) o.castShadow = true; });
+  scene.add(g); (bones[bone] ?? scene).attach(g);
+  built[s] = { sig: slotSig(s), g };
+}
+
+// ---------- Chlorotype wash ----------
+// Hand-bleached shirts: soft lighter clouds where the bleach took, a slight darker mottling, the grain of the jersey
+// and little cream specks (traced from photos of the real shirts). Drawn once per colorway on a seamless tile.
+const WASH = { "#6d6e74": { blotch: 0.34, dots: 150, seed: 11 }, "#b97d86": { blotch: 0.26, dots: 110, seed: 23 },
+               "#1b262c": { blotch: 0.5, dots: 130, seed: 37 }, "#7fb6d1": { blotch: 0.28, dots: 120, seed: 41 } };
+const washCache = {};
+function washTexture(hex) {
+  if (washCache[hex]) return washCache[hex];
+  const N = 512, c = document.createElement("canvas"); c.width = c.height = N;
+  const g = c.getContext("2d"), img = g.createImageData(N, N), d = img.data, w = WASH[hex];
+  let seed = w.seed * 7919; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  const lattice = (P) => {                                                 // tileable value noise on a P x P lattice
+    const v = Float32Array.from({ length: P * P }, rnd);
+    const at = (i, j) => v[((j % P + P) % P) * P + ((i % P + P) % P)];
+    return (x, y) => { x *= P; y *= P; const i = Math.floor(x), j = Math.floor(y), fx = x - i, fy = y - j;
+      const sx = fx * fx * (3 - 2 * fx), sy = fy * fy * (3 - 2 * fy);
+      return (at(i, j) * (1 - sx) + at(i + 1, j) * sx) * (1 - sy) + (at(i, j + 1) * (1 - sx) + at(i + 1, j + 1) * sx) * sy; };
+  };
+  const n1 = lattice(3), n2 = lattice(6), n3 = lattice(12), n4 = lattice(32);
+  const sm = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+  const r0 = parseInt(hex.slice(1, 3), 16), g0 = parseInt(hex.slice(3, 5), 16), b0 = parseInt(hex.slice(5, 7), 16);
+  const cream = [233, 226, 211];
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+    const u = x / N, v = y / N, n = n1(u, v) * 0.55 + n2(u, v) * 0.3 + n3(u, v) * 0.15;
+    const cloud = sm(0.5, 0.78, n), dark = 1 - sm(0.22, 0.46, n);
+    const f = 1 + w.blotch * (cloud - 0.35 * dark) + (n4(u, v) - 0.5) * 0.07 + (rnd() - 0.5) * 0.1;
+    const k = cloud * w.blotch * 0.6, i = (y * N + x) * 4;                // bleach also warms the colour toward cream
+    d[i] = (r0 * f) * (1 - k) + cream[0] * k; d[i + 1] = (g0 * f) * (1 - k) + cream[1] * k; d[i + 2] = (b0 * f) * (1 - k) + cream[2] * k; d[i + 3] = 255;
   }
+  g.putImageData(img, 0, 0);
+  for (let k = 0; k < w.dots; k++) {                                       // bleach specks, wrapped across the tile edges
+    const x = rnd() * N, y = rnd() * N, r = rnd() < 0.1 ? 3 + rnd() * 2 : 1.2 + rnd() * 1.6;
+    g.fillStyle = `rgba(${cream.join(",")},${(0.5 + rnd() * 0.45).toFixed(2)})`;
+    for (const dx of [-N, 0, N]) for (const dy of [-N, 0, N]) {
+      if (x + dx < -4 || x + dx > N + 4 || y + dy < -4 || y + dy > N + 4) continue;
+      g.beginPath(); g.arc(x + dx, y + dy, r, 0, Math.PI * 2); g.fill();
+    }
+  }
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace; tex.wrapS = tex.wrapT = THREE.RepeatWrapping; tex.anisotropy = 4;
+  return (washCache[hex] = tex);
 }
 
 // ---------- movements ----------
@@ -900,12 +1033,23 @@ function showMove() {
   moveTimer = setTimeout(toIdle, secs * 1000);
 }
 
+let lastDecal = null, uploadVersion = 0;
+const decalSig = () => [state.logo, state.logoColor, uploadVersion, teeMesh ? 1 : 0].join("|");
 function apply() {
-  for (const [name, key] of [["VB_TEE", "tee"], ["VB_SHORTS", "shorts"], ["VB_SHOES", "shoes"]])
+  for (const [name, key] of [["VB_SHORTS", "shorts"], ["VB_SHOES", "shoes"]])
     for (const m of parts[name] ?? []) if (!m.material.userData.painted) m.material.color.set(state[key]);
+  // the shirt: its colorway's hand-bleached wash on top of the colour (the black one stays plain)
+  const wash = WASH[state.tee.toLowerCase()] ? washTexture(state.tee.toLowerCase()) : null;
+  washUniforms.washOn.value = wash ? 1 : 0;
+  if (wash) washUniforms.washMap.value = wash;
+  for (const m of parts.VB_TEE ?? []) if (!m.material.userData.painted) m.material.color.set(wash ? 0xffffff : state.tee);
   accMat.color.set(state.accColor); knitMat.color.set(state.accColor);
   artReady.then(() => {
-    atRest(() => { buildAccessory(); updateDecal(); });
+    const slots = staleSlots(), dSig = decalSig();
+    if (slots.length || dSig !== lastDecal) atRest(() => {
+      slots.forEach(rebuildSlot);
+      if (dSig !== lastDecal) { updateDecal(); lastDecal = dSig; }
+    });
     if (!current && !STILL) toIdle();                                       // starts once the model is in
   });
 }
