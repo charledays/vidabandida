@@ -37,10 +37,10 @@ var TEES = {
  */
 var CAST = [
   { where: 'car', seat: 1, tee: 'spaceSteel', shorts: '#19191b', shoes: '#e2dccd' },
-  { where: 1, x: -0.8, z: -1.9, turn: 0.25, move: 'idle', tee: 'pinkPress', shorts: '#3a3b3d', shoes: '#f3f3f1' },
-  { where: 1, x: -0.12, z: -2.9, turn: -0.35, move: 'dance', tee: 'cloudy', shorts: '#2f405c', shoes: '#e2dccd' },
-  { where: 2, x: -0.3, z: -2.0, turn: -0.2, move: 'briefcase', tee: 'grayWorker', shorts: '#8b7b58', shoes: '#1a1a1a' },
-  { where: 3, x: -0.55, z: -1.8, turn: 0.15, move: 'pose', tee: 'blackcat', shorts: '#19191b', shoes: '#8a1c1c' }
+  { where: 1, x: -1.05, z: -1.75, turn: 0.25, move: 'idle', tee: 'pinkPress', shorts: '#3a3b3d', shoes: '#f3f3f1' },
+  { where: 1, x: -0.6, z: -2.35, turn: -0.35, move: 'dance', tee: 'cloudy', shorts: '#2f405c', shoes: '#e2dccd' },
+  { where: 2, x: -0.7, z: -2.0, turn: -0.2, move: 'briefcase', tee: 'grayWorker', shorts: '#8b7b58', shoes: '#1a1a1a' },
+  { where: 3, x: -0.75, z: -1.8, turn: 0.15, move: 'pose', tee: 'blackcat', shorts: '#19191b', shoes: '#8a1c1c' }
 ];
 var CLIPS = { idle: 'MOV_1_IDLE', dance: 'MOV_3_BAILE', briefcase: 'MOV_4_MALETIN', pose: 'MOV_5_POSE' };
 

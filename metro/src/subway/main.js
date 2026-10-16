@@ -187,11 +187,14 @@ function start() {
   }
 
   /**
-   * Getting off: one continuous first-person move, 2.5 s at most. Up from the seat and out through the
-   * doors, a turn to the right along the platform without stopping, and on down it; the view dips to black
-   * and the stop's page opens. There's no stepping back in. Seconds from the start of the move.
+   * Getting off: one continuous first-person walk. Up from the seat and out through the doors, on across
+   * the platform up to the poster, then a natural turn to the right while still walking, and on down the
+   * platform; the view dips to black and the stop's page opens. No stops along the way, no stepping back
+   * in. Seconds from the start of the walk.
    */
-  var EXIT = { door: 1.05, turn0: 0.6, turn1: 1.45, walk0: 0.8, pace: 1.9, dip0: 2.05, total: 2.5 };
+  var EXIT = { door: 1.7, lane0: 1.15, lane1: 2.75, turn0: 2.35, turn1: 3.55, walk0: 2.55, pace: 1.35, dip0: 3.95, total: 4.5 };
+  /** How close to the wall the walk gets before turning (the poster hangs at wallZ). */
+  var EXIT_LANE = WORLD.station.wallZ + 2.1;
   var exit = null;
   function startExit() {
     if (exit || !doorway.ready()) return false;
@@ -201,19 +204,19 @@ function start() {
     setBusy('exit');
     return true;
   }
-  /** Where the move is at time t (s): door walk 0..1, head yaw (right is negative), metres along, dip. */
+  /** Where the walk is at time t (s): door walk 0..1, lane 0..1, head yaw (right is negative), metres along, dip. */
   function exitPose(t) {
     if (reduceMotion) return { door: 0, yaw: 0, along: 0, lane: 0, dip: Math.min(1, t / 0.4) };
     var s = function (x) { x = Math.max(0, Math.min(1, x)); return x * x * (3 - 2 * x); };
-    // Walking speed builds in, then holds: never a stop between the doors and the platform.
-    var w = Math.max(0, t - EXIT.walk0);
-    var along = EXIT.pace * (w < 0.5 ? w * w : w - 0.25);
+    // Walking pace along the platform builds in gently (no lurch), then holds.
+    var w = Math.max(0, t - EXIT.walk0), ramp = 1.1;
+    var along = EXIT.pace * (w < ramp ? w * w / (2 * ramp) : w - ramp / 2);
     return {
-      door: Math.min(1, t / EXIT.door),
+      // A slow ease in and out of the doorway: the rig curves the path, this paces it.
+      door: s(t / EXIT.door) * 0.5 + Math.min(1, t / EXIT.door) * 0.5,
+      lane: s((t - EXIT.lane0) / (EXIT.lane1 - EXIT.lane0)),
       yaw: -Math.PI / 2 * s((t - EXIT.turn0) / (EXIT.turn1 - EXIT.turn0)),
       along: along,
-      // Into the open middle of the platform, between its edge and the columns, as the turn comes round.
-      lane: s((t - 0.7) / 0.9),
       dip: s((t - EXIT.dip0) / (EXIT.total - EXIT.dip0))
     };
   }
@@ -916,7 +919,7 @@ function start() {
       rig.setDoor(ep.door);
       rig.setLook(ep.yaw);
       rig.setSpot(ep.along);
-      rig.setLane(-1.95, ep.lane);
+      rig.setLane(EXIT_LANE, ep.lane);
       rig.setInspect(null, 0);
       dip = Math.max(dip, ep.dip);
       if (et >= (reduceMotion ? 0.4 : EXIT.total) && !exit.gone) { exit.gone = true; window.location.href = exit.href; }

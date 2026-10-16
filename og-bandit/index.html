@@ -156,6 +156,61 @@
   "three-mesh-bvh": "https://cdn.jsdelivr.net/npm/three-mesh-bvh@0.8.3/build/index.module.js"
 } }
 </script>
+<!--OGB:LOADER-->
+<style>
+/* Entering the dress-up: the black OG BANDIT spins on black until the model is in, finishing on a whole turn */
+#ogb-loader{position:fixed;inset:0;z-index:9999;background:#000;display:grid;place-items:center;transition:opacity .55s ease,visibility .55s}
+#ogb-loader.out{opacity:0;visibility:hidden}
+#ogb-loader canvas{width:min(22vw,96px);height:min(16svh,116px);display:block}
+#ogb-loader .glow{position:absolute;width:min(34vw,160px);aspect-ratio:1;border-radius:50%;background:radial-gradient(closest-side,rgba(240,235,225,.06),rgba(240,235,225,0));pointer-events:none}
+</style>
+<div id="ogb-loader" aria-hidden="true"><div class="glow"></div><canvas></canvas></div>
+<script type="module">
+import * as THREE from "three";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
+const el = document.getElementById("ogb-loader");
+const STILL = matchMedia("(prefers-reduced-motion: reduce)").matches;
+let modelIn = false, done = false;
+addEventListener("ogb-ready", () => { modelIn = true; });
+const gone = () => { if (done) return; done = true; el.classList.add("out"); setTimeout(() => el.remove(), 600); };
+setTimeout(gone, 20000);                                                   // never stands in the way for good
+const canvas = el.querySelector("canvas");
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.toneMapping = THREE.NeutralToneMapping;
+const scene = new THREE.Scene(), pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture; scene.environmentIntensity = 0.55;
+const key = new THREE.DirectionalLight(0xfff3e2, 2.2); key.position.set(6, 10, 9); scene.add(key);
+const rim = new THREE.DirectionalLight(0xf0ebe1, 3.2); rim.position.set(-7, 8, -9); scene.add(rim);
+const rim2 = new THREE.DirectionalLight(0xf0ebe1, 1.6); rim2.position.set(8, 3, -6); scene.add(rim2);
+const camera = new THREE.PerspectiveCamera(26, 1, 0.1, 100); camera.position.set(0, 5.6, 27); camera.lookAt(0, 5, 0);
+const pivot = new THREE.Group(); scene.add(pivot);
+const size = () => { const w = canvas.clientWidth, h = canvas.clientHeight; if (!w || !h) return; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); };
+size();
+const black = new THREE.MeshPhysicalMaterial({ color: 0x0a0a0b, roughness: 0.3, clearcoat: 1, clearcoatRoughness: 0.12 });
+new GLTFLoader().loadAsync("/og-bandit/og-bandit-silueta.glb").then(g => {
+  g.scene.traverse(o => { if (o.isMesh) o.material = black; }); pivot.add(g.scene);
+}).catch(() => {});
+const TURN = Math.PI * 2, SPEED = 3.4;                                    // about 1.8 s a turn
+let rot = 0; const clock = new THREE.Clock();
+renderer.setAnimationLoop(() => {
+  const dt = Math.min(clock.getDelta(), 0.1);
+  if (!done) {
+    if (STILL) { if (modelIn) gone(); }
+    else {
+      const next = rot + dt * SPEED;
+      // once the dress-up's model is in, finish the turn it's on (at least one), facing front
+      if (modelIn && next >= TURN && Math.floor(next / TURN) > Math.floor(rot / TURN)) { rot = Math.floor(next / TURN) * TURN; gone(); }
+      else rot = next;
+    }
+    pivot.rotation.y = rot;
+  }
+  renderer.render(scene, camera);
+  if (done && !el.isConnected) { renderer.setAnimationLoop(null); renderer.dispose(); pmrem.dispose(); }
+});
+</script>
+<!--/OGB:LOADER-->
 <script type="module">
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
@@ -409,7 +464,9 @@ loadModel().then(gltf => {
   mixer = new THREE.AnimationMixer(root);
   for (const clip of gltf.animations) moves[clip.name] = mixer.clipAction(clip);
   statusEl.remove(); resize(); apply();
-}).catch(() => { statusEl.textContent = "No se pudo cargar el modelo. Recarga la página."; });
+  dispatchEvent(new Event("ogb-ready"));                                   // the entrance loader can go
+
+}).catch(() => { statusEl.textContent = "No se pudo cargar el modelo. Recarga la página."; dispatchEvent(new Event("ogb-ready")); });
 
 // shirt prints: decals projected onto the tee only (front lettering + back arch, sleeve to sleeve)
 function chlorotypeWear(g, w, h, seed) {

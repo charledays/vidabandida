@@ -301,15 +301,7 @@ footer{border-top:1px solid var(--border);padding:2.5rem;display:grid;grid-templ
 } }
 </script>
 <style>
-/* OG BANDIT: black spinning toy while the page loads, and the way into the dress-up under the hero */
-#vb-loader{position:fixed;inset:0;z-index:9999;background:#000;display:grid;place-items:center;transition:opacity .55s ease,visibility .55s}
-#vb-loader.out{opacity:0;visibility:hidden}
-#vb-loader canvas{width:min(22vw,96px);height:min(16svh,116px);display:block}
-#vb-loader .vb-loader-glow{position:absolute;width:min(34vw,160px);aspect-ratio:1;border-radius:50%;background:radial-gradient(closest-side,rgba(240,235,225,.06),rgba(240,235,225,0));pointer-events:none}
-#vb-loader .vb-loader-line{position:absolute;top:calc(50% + min(8svh,58px) + 16px);width:48px;height:1px;background:rgba(240,235,225,.14);overflow:hidden}
-#vb-loader .vb-loader-line::after{content:"";position:absolute;inset:0;width:40%;background:rgba(240,235,225,.7);animation:vbLoad 1.1s ease-in-out infinite}
-@keyframes vbLoad{0%{transform:translateX(-100%)}100%{transform:translateX(260%)}}
-@media (prefers-reduced-motion: reduce){#vb-loader .vb-loader-line::after{animation:none}}
+/* OG BANDIT: the way into the dress-up under the hero (the black toy with a "?" for a face) */
 .og-cta{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:clamp(12px,4vw,56px);padding:clamp(28px,6vw,72px) 2.5rem;border-bottom:1px solid var(--border);color:var(--cream);text-decoration:none;cursor:crosshair}
 .og-cta-3d{width:clamp(150px,22vw,280px);height:clamp(180px,26vw,330px);display:block}
 .og-cta-text{display:grid;gap:6px;min-width:0}
@@ -324,19 +316,6 @@ footer{border-top:1px solid var(--border);padding:2.5rem;display:grid;grid-templ
 </head>
 <body>
 <!--OGB:BODY-->
-<div id="vb-loader" aria-hidden="true"><div class="vb-loader-glow"></div><canvas></canvas><div class="vb-loader-line"></div></div>
-<script>
-// the loader never stands in the way: it goes when the page has loaded (the 3D script may keep it a moment
-// longer so the toy is seen), straight away when arriving to buy a shirt, and after 8 s whatever happens
-(function(){
-  var l=document.getElementById("vb-loader"); if(!l) return;
-  var gone=function(){ if(l.isConnected){ l.classList.add("out"); setTimeout(function(){ l.remove(); },600); } };
-  if(new URLSearchParams(location.search).get("producto")){ l.remove(); return; }
-  addEventListener("load",function(){ setTimeout(function(){ if(!l.dataset.three) gone(); },300); });
-  setTimeout(gone,8000);
-  window.__vbLoaderGone=gone;
-})();
-</script>
 <script type="module" async>
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
@@ -344,8 +323,6 @@ import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 
 const MODEL = "/og-bandit/og-bandit-silueta.glb";
 const STILL = matchMedia("(prefers-reduced-motion: reduce)").matches;
-const loaderEl = document.getElementById("vb-loader");
-if (loaderEl) loaderEl.dataset.three = "1";
 
 // one black vinyl toy, lit to read on the dark site: a warm key, a strong rim from behind, studio reflections
 function makeStage(canvas, { faceMark = false } = {}) {
@@ -398,34 +375,7 @@ function spin(stage, speed, isVisible = () => true) {
 const gltf = await new GLTFLoader().loadAsync(MODEL).catch(() => null);
 const toy = () => { const s = gltf.scene.clone(true); s.traverse(o => { if (o.isMesh) o.material = black; }); return s; };
 
-// 1 · loader: the toy spins in whole turns; once the page is in it finishes the turn it is on, facing
-//     front, and the loader fades (at least one full turn, so it is always seen)
-if (gltf && loaderEl && loaderEl.isConnected) {
-  const st = makeStage(loaderEl.querySelector("canvas")); st.pivot.add(toy());
-  const TURN = Math.PI * 2, SPEED = 3.4;                                  // about 1.8 s a turn
-  let rot = 0, ready = false, done = false;
-  const pageIn = document.readyState === "complete" ? Promise.resolve() : new Promise(r => addEventListener("load", r, { once: true }));
-  pageIn.then(() => { ready = true; });
-  const finish = () => { done = true; window.__vbLoaderGone?.(); setTimeout(() => st.dispose(), 700); };
-  const clock = new THREE.Clock();
-  st.renderer.setAnimationLoop(() => {
-    const dt = Math.min(clock.getDelta(), 0.1);
-    if (!done) {
-      if (STILL) { if (ready) finish(); }
-      else {
-        const next = rot + dt * SPEED;
-        if (ready && next >= TURN && Math.floor(next / TURN) > Math.floor(rot / TURN)) { rot = Math.floor(next / TURN) * TURN; finish(); }
-        else rot = next;
-      }
-      st.pivot.rotation.y = rot;
-    }
-    st.renderer.render(st.scene, st.camera);
-  });
-} else if (loaderEl) {
-  window.__vbLoaderGone?.();
-}
-
-// 2 · the way in: the black toy with a "?" for a face, turning slowly; faster while pointed at
+// the way in: the black toy with a "?" for a face, turning slowly; faster while pointed at
 const cta = document.querySelector(".og-cta");
 if (gltf && cta) {
   const st = makeStage(cta.querySelector("canvas"), { faceMark: true });
