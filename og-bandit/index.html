@@ -333,7 +333,7 @@ function syncProduct() {
   const cw = COLORS.tee.find(c => c[1].toLowerCase() === state.tee.toLowerCase());
   document.getElementById("product-name").textContent = cw ? cw[0] : "Camiseta";
   const buy = document.getElementById("buy");
-  buy.href = cw?.[3] ? `/?producto=${cw[3]}` :
+  buy.href = cw?.[3] ? `/shop/?producto=${cw[3]}` :
     "https://wa.me/51924946409?text=" + encodeURIComponent(`Hola, quiero la camiseta ${cw ? cw[0] : ""} (la vi en el OG Bandit).`);
   buy.target = cw?.[3] ? "_self" : "_blank";
 }
