@@ -9,7 +9,8 @@
  */
 (function () {
   var GA_ID = 'G-B3R38DTC9D';   // Google Analytics 4 measurement ID (vidabandida.art web stream)
-  var SAVE_URL = '';       // where saved OG BANDITs are recorded (POST, JSON); empty = nowhere
+  // where saved OG BANDITs are recorded (POST, JSON): the Apps Script web app writing to the "OG BANDIT – firmas" sheet
+  var SAVE_URL = 'https://script.google.com/macros/s/AKfycbzr7qaun1F0NFe3eiXI3fR_aB9mbaIuOyUTVEa-VpBfTwZtWN5dMCFkorBa4HejF3Q_SQ/exec';
 
   window.dataLayer = window.dataLayer || [];
   function gtag() { window.dataLayer.push(arguments); }
