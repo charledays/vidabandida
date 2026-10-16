@@ -168,8 +168,8 @@ function start() {
   var busy = null;
   var run = null;
   // A stop on the line map rides the train there.
-  var detachMap = lineMap.attach(camera, canvas, function (href) {
-    rideToStation(stations.findIndex(function (s) { return s.href === href; }));
+  var detachMap = lineMap.attach(camera, canvas, function (i) {
+    rideToStation(stations.indexOf(mapStops[i]));
   });
 
   /** Ride to station i (doors shut, depart, tunnel, arrive, doors open); dir -1 rides backward. False if nothing ran. */

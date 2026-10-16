@@ -30,6 +30,45 @@ export function createUI(root, stations, links, handlers) {
 
   root.style.setProperty('--line', LINE.color);
 
+  // The map sheet (the Mapa chip): every stop as a button; a tap closes the sheet and rides there.
+  var sheet = root.querySelector('[data-map-sheet]');
+  var sheetStops = root.querySelector('[data-map-stops]');
+  var openBtn = root.querySelector('[data-map-open]');
+  var sheetItems = links.map(function (stop) {
+    var li = document.createElement('li');
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.innerHTML = '<span class="dot" aria-hidden="true"></span><span><strong></strong><small></small></span>';
+    b.querySelector('strong').textContent = stop.name;
+    b.querySelector('small').textContent = stop.note || '';
+    b.addEventListener('click', function () {
+      closeSheet();
+      handlers.ride(stations.indexOf(stop));
+    });
+    li.appendChild(b);
+    sheetStops.appendChild(li);
+    return li;
+  });
+  function openSheet() {
+    if (busy) return;
+    sheet.hidden = false;
+    var here = sheetStops.querySelector('.here button') || sheetStops.querySelector('button');
+    if (here) here.focus();
+  }
+  function closeSheet() {
+    if (sheet.hidden) return;
+    sheet.hidden = true;
+    openBtn.focus({ preventScroll: true });
+  }
+  openBtn.addEventListener('click', openSheet);
+  root.querySelector('[data-map-close]').addEventListener('click', closeSheet);
+  sheet.addEventListener('click', function (e) { if (e.target === sheet) closeSheet(); });
+  window.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeSheet(); });
+  // Touches and wheels inside the sheet belong to it, not to the ride.
+  ['wheel', 'touchstart', 'touchmove', 'touchend'].forEach(function (type) {
+    sheet.addEventListener(type, function (e) { e.stopPropagation(); }, { passive: true });
+  });
+
   // The line map's stops as real links, for keyboards and screen readers.
   var list = root.querySelector('[data-line-links]');
   links.forEach(function (stop) {
@@ -107,6 +146,7 @@ export function createUI(root, stations, links, handlers) {
     set('station', station.id, function () {
       el.name.textContent = station.name;
       el.sub.textContent = station.note;
+      sheetItems.forEach(function (li, i) { li.classList.toggle('here', links[i] === station); });
     });
     set('kicker', stopped ? 'This is' : arriving ? 'Now arriving' : 'Next stop', function (v) {
       el.kicker.textContent = v;

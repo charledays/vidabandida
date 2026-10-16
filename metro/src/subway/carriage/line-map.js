@@ -166,7 +166,7 @@ export function createLineMap(mats, registry, stops) {
     }
     function onClick(e) {
       var i = pick(e);
-      if (i >= 0 && i === pressed) navigate(stops[i].href);
+      if (i >= 0 && i === pressed) navigate(i);
     }
     function onLeave() {
       pointer.onMap = false;

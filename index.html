@@ -62,6 +62,27 @@ body{overflow-x:hidden;}
 .chip:focus-visible{outline:2px solid var(--line);outline-offset:3px;}
 /* Icon chips (tips, sound, the spray can): round, a line icon in the ink colour. */
 .chip-icon{display:grid;place-items:center;width:2.6rem;height:2.6rem;padding:0;}
+/* The line map, always a tap away (on a phone the frame is the doors, the map on the wall is out of view). */
+.map-chip{position:absolute;top:calc(env(safe-area-inset-top,0px) + var(--edge));left:var(--edge);display:flex;align-items:center;gap:0.5rem;pointer-events:auto;}
+.map-chip .icon{width:1.05rem;height:1.05rem;}
+.line-sheet{position:fixed;inset:0;z-index:30;display:grid;align-items:start;justify-items:start;padding:calc(env(safe-area-inset-top,0px) + var(--edge)) var(--edge);
+  background:rgba(0,0,0,0.55);pointer-events:auto;}
+.line-sheet[hidden]{display:none;}
+.line-sheet-card{width:min(22rem,100%);background:#f2f0ea;color:#111;border-radius:6px;padding:1rem 1.1rem 0.9rem;box-shadow:0 12px 40px rgba(0,0,0,0.5);}
+.line-sheet-card header{display:flex;align-items:center;gap:0.6rem;padding-bottom:0.7rem;border-bottom:3px solid #111;}
+.line-sheet-card .bullet{display:grid;place-items:center;width:1.9rem;height:1.9rem;border-radius:50%;background:var(--line);color:#fff;font:700 1.05rem/1 var(--sign);}
+.sheet-title{flex:1;font:700 1rem/1.1 var(--sign);}
+.line-sheet-card .chip{color:#111;background:transparent;border-color:rgba(0,0,0,0.2);-webkit-backdrop-filter:none;backdrop-filter:none;}
+.line-stops{list-style:none;margin:0.9rem 0 0.4rem;padding:0;position:relative;}
+.line-stops::before{content:"";position:absolute;left:0.82rem;top:0.9rem;bottom:0.9rem;width:4px;background:var(--line);}
+.line-stops button{all:unset;box-sizing:border-box;display:grid;grid-template-columns:1.9rem 1fr;align-items:center;gap:0.7rem;width:100%;padding:0.55rem 0;cursor:pointer;}
+.line-stops .dot{justify-self:center;width:0.95rem;height:0.95rem;border-radius:50%;background:#f2f0ea;border:3px solid #111;position:relative;z-index:1;}
+.line-stops strong{display:block;font:700 1.02rem/1.15 var(--sign);}
+.line-stops small{display:block;font:500 0.72rem/1.2 var(--sign);color:#555;margin-top:0.15rem;}
+.line-stops .here .dot{background:var(--line);border-color:var(--line);}
+.line-stops .here small::after{content:" · Estás aquí";color:var(--line);font-weight:700;}
+.line-stops button:focus-visible{outline:2px solid var(--line);outline-offset:2px;}
+.sheet-foot{font:500 0.7rem/1.3 var(--sign);color:#666;letter-spacing:0.04em;}
 .chip-icon .icon{width:1.25rem;height:1.25rem;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;}
 [data-sound] .icon-on,[data-sound][aria-pressed="true"] .icon-off{display:none;}
 [data-sound][aria-pressed="true"] .icon-on{display:block;}
@@ -238,6 +259,14 @@ html.is-stepped,html.is-stepped body{overflow:hidden;overscroll-behavior:none;he
   <div class="dip" data-dip aria-hidden="true"></div>
 
   <div class="hud">
+    <button type="button" class="chip map-chip" data-map-open aria-haspopup="dialog" aria-controls="line-sheet"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3v18"/><circle cx="7" cy="6" r="2"/><circle cx="7" cy="12" r="2"/><circle cx="7" cy="18" r="2"/><path d="M12 6h8M12 12h8M12 18h8"/></svg><span>Mapa</span></button>
+    <div class="line-sheet" id="line-sheet" role="dialog" aria-modal="true" aria-label="Mapa de la línea" data-map-sheet hidden>
+      <div class="line-sheet-card">
+        <header><span class="bullet" aria-hidden="true">V</span><span class="sheet-title">VIDABANDIDA Line</span><button type="button" class="chip chip-icon" data-map-close aria-label="Cerrar mapa"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></header>
+        <ol class="line-stops" data-map-stops></ol>
+        <p class="sheet-foot">Toca una parada y el tren te lleva</p>
+      </div>
+    </div>
     <div class="top-right">
       <button type="button" class="chip chip-icon" data-tips aria-pressed="true" aria-label="Tips on"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.4a2.5 2.5 0 0 1 4.8.9c0 1.7-2.4 2.2-2.4 3.7"/><path d="M12 17.2v0"/><path class="icon-slash" d="M4.5 4.5l15 15"/></svg></button>
       <button type="button" class="chip chip-icon" data-sound aria-pressed="false" aria-label="Sound off"><svg class="icon icon-off" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M17 9l4 6M21 9l-4 6"/></svg><svg class="icon icon-on" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg></button>
