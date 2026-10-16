@@ -1,0 +1,925 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>OG Bandit · Vestidor — VIDABANDIDA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Narrow:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  /* Layout: product-shot stage (the toy on studio grey) + a tight spec panel, stacked on phones. */
+  :root {
+    --bg: #cfd0cc;          /* studio sweep grey, like the reference sheet */
+    --stage: #d9dad6;
+    --panel: #ecece8;
+    --ink: #141414;
+    --muted: #61625e;
+    --line: rgba(20, 20, 20, 0.14);
+    --font-ui: "Archivo Narrow", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+    --font-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+    color-scheme: light;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { height: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-ui);
+    font-size: 15px;
+    padding-inline: 16px;
+    padding-block: 12px 20px;
+  }
+  .wrap { max-width: 1180px; margin-inline: auto; display: grid; gap: 12px; }
+  header { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .wordmark { margin: 0; width: clamp(150px, 30vw, 230px); aspect-ratio: 1200 / 221; background: var(--ink);
+    -webkit-mask: url("vb-logo.png") left center / contain no-repeat; mask: url("vb-logo.png") left center / contain no-repeat; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .meta { font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); display: flex; gap: 10px; flex-wrap: wrap; }
+  .meta b { color: var(--ink); font-weight: 700; }
+
+  .studio { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 12px; align-items: start; }
+  @media (max-width: 820px) { .studio { grid-template-columns: minmax(0, 1fr); } }
+
+  .stage { position: relative; background: radial-gradient(120% 90% at 50% 35%, var(--stage), var(--bg)); border-radius: 6px; aspect-ratio: 4 / 5; max-height: 78vh; width: 100%; max-width: 100%; overflow: hidden; }
+  @media (max-width: 820px) { .stage { aspect-ratio: 1 / 1.05; max-height: 62vh; } }
+  .stage canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+  .stage .hint { position: absolute; left: 12px; bottom: 10px; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); pointer-events: none; }
+  .stage .status { position: absolute; inset: 0; display: grid; place-items: center; font-size: 13px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+
+  .panel { background: var(--panel); border-radius: 6px; padding: 14px; display: grid; gap: 14px; min-width: 0; }
+  .tabs { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; border-bottom: 1px solid var(--line); }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab { appearance: none; border: 0; background: none; font: 600 13px/1 var(--font-ui); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); padding: 10px 10px 11px; border-bottom: 2px solid transparent; margin-bottom: -1px; cursor: pointer; white-space: nowrap; }
+  .tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--ink); }
+  .tab:focus-visible, .sw:focus-visible, .btn:focus-visible, .opt:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+  .group { display: grid; gap: 10px; }
+  .label { font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); display: flex; justify-content: space-between; gap: 8px; }
+  .label code { font-family: var(--font-mono); letter-spacing: 0; text-transform: none; color: var(--ink); }
+
+  .swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; }
+  .sw { appearance: none; border: 1px solid var(--line); background: #fff0; border-radius: 4px; padding: 6px; display: grid; grid-template-columns: 22px 1fr; align-items: center; gap: 8px; text-align: left; font: 500 13px/1.15 var(--font-ui); color: var(--ink); cursor: pointer; min-width: 0; }
+  .sw .chip { width: 22px; height: 22px; border-radius: 50%; border: 1px solid rgba(0,0,0,.22); }
+  .sw[aria-pressed="true"] { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+  .custom { display: flex; align-items: center; gap: 10px; font-size: 13px; }
+  .custom input[type=color] { width: 40px; height: 30px; border: 1px solid var(--line); border-radius: 4px; padding: 2px; background: none; cursor: pointer; }
+
+  .opts { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; }
+  .opt { appearance: none; border: 1px solid var(--line); background: none; border-radius: 4px; padding: 10px; font: 600 13px/1.1 var(--font-ui); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink); cursor: pointer; text-align: left; }
+  .opt small { display: block; font: 400 11px/1.3 var(--font-ui); letter-spacing: 0; text-transform: none; color: var(--muted); margin-top: 4px; }
+  .opt[aria-pressed="true"] { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+  .upload { font-size: 13px; display: grid; gap: 6px; }
+  .upload input { font: inherit; font-size: 12px; max-width: 100%; }
+
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .btn { appearance: none; border: 1px solid var(--ink); background: var(--ink); color: var(--panel); border-radius: 4px; padding: 10px 14px; font: 600 12px/1 var(--font-ui); letter-spacing: 0.14em; text-transform: uppercase; cursor: pointer; }
+  .btn.ghost { background: none; color: var(--ink); }
+
+  .spec { border-top: 1px solid var(--line); padding-top: 10px; display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; font-size: 13px; }
+  .spec dt { font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); align-self: center; }
+  .spec dd { margin: 0; font-weight: 600; min-width: 0; }
+  .note { font-size: 12px; color: var(--muted); line-height: 1.45; max-width: 62ch; margin: 0; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1 class="wordmark"><span class="sr">vidabandida</span></h1>
+    <div class="meta"><span><b>OG BANDIT</b></span><span>Vestidor · prototipo</span></div>
+  </header>
+
+  <section class="studio">
+    <div class="stage" id="stage">
+      <div class="status" id="status">Cargando el OG Bandit…</div>
+      <span class="hint">Arrastra para girar · pellizca para acercar</span>
+    </div>
+
+    <div class="panel">
+      <div class="tabs" role="tablist" id="tabs"></div>
+      <div id="panes"></div>
+
+      <dl class="spec" id="spec"></dl>
+
+      <div class="actions">
+        <button class="btn" id="random" type="button">Combinación al azar</button>
+        <button class="btn ghost" id="reset" type="button">Volver al original</button>
+      </div>
+      <p class="note">Prototipo. La camiseta usa los colorways Chlorotype y el lettering oficial; los colores de short y zapatillas y las formas de los dos accesorios son de muestra hasta recibir los oficiales. Puedes probar tu propio logo en la pestaña Logo.</p>
+    </div>
+  </section>
+</div>
+
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+} }
+</script>
+<script type="module">
+import * as THREE from "three";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
+import { DecalGeometry } from "three/addons/geometries/DecalGeometry.js";
+import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
+
+// ---------- catalogue (samples until the official colorways arrive) ----------
+const COLORS = {
+  // Chlorotype colorways sampled from product photos: [name, fabric, matching lettering]
+  tee: [["Cloudy","#7fb6d1","#b5d8e6"],["Rosa viejo","#b97d86","#e3cfb8"],["Gris pizarra","#6d6e74","#d9d5bf"],["Verde petróleo","#1b262c","#9a928a"],["Negro verde","#0f241a","#b9421d"]],
+  shorts: [["Negro","#19191b"],["Carbón","#3a3b3d"],["Khaki","#8b7b58"],["Verde militar","#4b5137"],["Arena","#b8a888"],["Azul denim","#2f405c"]],
+  shoes: [["Crema","#e2dccd"],["Blanco","#f3f3f1"],["Negro","#1a1a1a"],["Gris","#9a9b98"],["Rojo","#8a1c1c"],["Arena","#c9b48e"]],
+  logo: [["Celeste lavado","#b5d8e6"],["Crema","#e3cfb8"],["Hueso","#d9d5bf"],["Arena","#9a928a"],["Rojo óxido","#b9421d"],["Blanco","#f2f0ea"],["Negro","#121212"]],
+  // accessories only come in the brand's own options: caps and beanies in the shirt colorways (isotype in its lettering colour)
+  lens: [["Naranja espejo","#ff7a1a"],["Negro","#141416"]],
+  ski: [["Naranja","#f7a11d"],["Azul","#2f6fe0"]],
+};
+const LOGOS = [["wordmark","vidabandida","Frente y espalda oficiales, de manga a manga"],["none","Sin logo","Camiseta lisa"],["upload","Tu logo","Sube un PNG para probar"]];
+// accessory slots: [state key, label, options [id, name, hint]]
+const SLOTS = [
+  ["hat", "Cabeza", [["none","Nada",""],["cap","Gorra","Con isotipo"],["beanie","Beanie","Con isotipo"],["crown","Corona","Dorada"]]],
+  ["eyes", "Ojos", [["none","Nada",""],["sun","Lentes de sol",""],["ski","Lentes de ski",""]]],
+  ["phones", "Audífonos", [["none","Nada",""],["black","Negros",""],["silver","Plateados",""]]],
+  ["clava", "Cara", [["none","Nada",""],["on","Balaclava","Negra"]]],
+  ["chain", "Cuello", [["none","Nada",""],["gold","Cadena dorada",""],["silver","Cadena plateada",""]]],
+  ["watch", "Muñeca", [["none","Nada",""],["gold","Reloj dorado",""],["silver","Reloj plateado",""]]],
+];
+const DEFAULT = { tee:"#1b262c", shorts:"#19191b", shoes:"#e2dccd", logo:"wordmark", logoColor:"#9a928a", hat:"none", eyes:"none", phones:"none", clava:"none", chain:"none", watch:"none", accColor:"#1b262c", isoColor:"#9a928a", lensColor:"#ff7a1a", skiColor:"#f7a11d" };
+let state = { ...DEFAULT };
+let uploadedImage = null;
+const art = {};
+const artReady = Promise.all(["wordmark", "isotipo", "back", "logo"].map(k => new Promise(ok => {
+  const img = new Image(); img.onload = () => { art[k] = img; ok(); }; img.onerror = ok; img.src = `vb-${k}.png`;
+})));
+function tinted(img, color, w, h) {
+  const c = document.createElement("canvas"); c.width = w; c.height = h;
+  const g = c.getContext("2d"); g.drawImage(img, 0, 0, w, h);
+  g.globalCompositeOperation = "source-in"; g.fillStyle = color; g.fillRect(0, 0, w, h);
+  g.globalCompositeOperation = "source-over"; return c;
+}
+
+// ---------- UI ----------
+const TABS = [["tee","Camiseta"],["logo","Logo"],["shorts","Short"],["shoes","Zapatillas"],["acc","Accesorios"]];
+const tabsEl = document.getElementById("tabs"), panesEl = document.getElementById("panes");
+function nameOf(list, hex) { const f = list.find(([, h]) => h.toLowerCase() === hex.toLowerCase()); return f ? f[0] : "Personalizado"; }
+
+function swatchGroup(key, list, label, { custom = true, pair = null } = {}) {
+  // pair: the state key that takes a colorway's second colour (the shirt's lettering, the cap's isotype)
+  const g = document.createElement("div"); g.className = "group";
+  g.innerHTML = `<div class="label"><span>${label}</span><code data-hex="${key}"></code></div><div class="swatches"></div>` +
+    (custom ? `<label class="custom" for="custom-${key}"><input type="color" id="custom-${key}"> Color personalizado</label>` : "");
+  const box = g.querySelector(".swatches");
+  for (const [n, h, letters] of list) {
+    const b = document.createElement("button"); b.type = "button"; b.className = "sw"; b.dataset.key = key; b.dataset.hex = h;
+    const chip = letters ? `linear-gradient(135deg, ${h} 0 55%, ${letters} 55% 100%)` : h;
+    b.innerHTML = `<span class="chip" style="background:${chip}"></span><span>${n}</span>`;
+    b.addEventListener("click", () => { if (letters && pair) state[pair] = letters; set(key, h); });
+    box.appendChild(b);
+  }
+  g.querySelector("input")?.addEventListener("input", e => set(key, e.target.value));
+  return g;
+}
+function optionGroup(key, list, label) {
+  const g = document.createElement("div"); g.className = "group";
+  g.innerHTML = `<div class="label"><span>${label}</span></div><div class="opts"></div>`;
+  for (const [id, n, sub] of list) {
+    const b = document.createElement("button"); b.type = "button"; b.className = "opt"; b.dataset.key = key; b.dataset.val = id;
+    b.innerHTML = sub ? `${n}<small>${sub}</small>` : n; b.addEventListener("click", () => set(key, id));
+    g.querySelector(".opts").appendChild(b);
+  }
+  return g;
+}
+const panes = {
+  tee: [swatchGroup("tee", COLORS.tee, "Colorway Chlorotype · camiseta y letras", { pair: "logoColor" })],
+  logo: [optionGroup("logo", LOGOS, "Gráfico del pecho"), swatchGroup("logoColor", COLORS.logo, "Color del logo")],
+  shorts: [swatchGroup("shorts", COLORS.shorts, "Color del short cargo")],
+  shoes: [swatchGroup("shoes", COLORS.shoes, "Color de las zapatillas")],
+  acc: [...SLOTS.map(([key, label, opts]) => optionGroup(key, opts, label)),
+        swatchGroup("lensColor", COLORS.lens, "Lentes de sol", { custom: false }),
+        swatchGroup("skiColor", COLORS.ski, "Lentes de ski", { custom: false }),
+        swatchGroup("accColor", COLORS.tee, "Gorra y beanie · colorways del polo", { custom: false, pair: "isoColor" })],
+};
+const up = document.createElement("label"); up.className = "upload"; up.htmlFor = "logo-file";
+up.innerHTML = `Sube tu logo (PNG con fondo transparente) <input type="file" id="logo-file" accept="image/png,image/svg+xml,image/webp">`;
+up.querySelector("input").addEventListener("change", e => {
+  const f = e.target.files[0]; if (!f) return;
+  const r = new FileReader();
+  r.onload = () => { const img = new Image(); img.onload = () => { uploadedImage = img; set("logo", "upload"); }; img.src = r.result; };
+  r.readAsDataURL(f);
+});
+panes.logo.splice(1, 0, up);
+
+TABS.forEach(([id, label], i) => {
+  const t = document.createElement("button"); t.type = "button"; t.className = "tab"; t.role = "tab"; t.id = "tab-" + id;
+  t.textContent = label; t.setAttribute("aria-selected", i === 0); t.setAttribute("aria-controls", "pane-" + id);
+  t.addEventListener("click", () => selectTab(id)); tabsEl.appendChild(t);
+  const p = document.createElement("div"); p.id = "pane-" + id; p.role = "tabpanel"; p.className = "group"; p.style.gap = "16px";
+  p.hidden = i !== 0; panes[id].forEach(n => p.appendChild(n)); panesEl.appendChild(p);
+});
+function selectTab(id) {
+  for (const [t] of TABS) {
+    document.getElementById("tab-" + t).setAttribute("aria-selected", t === id);
+    document.getElementById("pane-" + t).hidden = t !== id;
+  }
+}
+function syncUI() {
+  document.querySelectorAll(".sw").forEach(b => b.setAttribute("aria-pressed", state[b.dataset.key].toLowerCase() === b.dataset.hex.toLowerCase()));
+  document.querySelectorAll(".opt").forEach(b => b.setAttribute("aria-pressed", state[b.dataset.key] === b.dataset.val));
+  document.querySelectorAll("code[data-hex]").forEach(c => c.textContent = state[c.dataset.hex].toUpperCase());
+  for (const k of ["tee","shorts","shoes","logoColor"]) { const i = document.getElementById("custom-" + k); if (i) i.value = state[k]; }
+  const logoName = LOGOS.find(l => l[0] === state.logo)[1];
+  const worn = SLOTS.filter(([k]) => state[k] !== "none").map(([k, , opts]) => opts.find(o => o[0] === state[k])[1]);
+  document.getElementById("spec").innerHTML = `
+    <dt>Camiseta</dt><dd>${nameOf(COLORS.tee, state.tee)}</dd>
+    <dt>Logo</dt><dd>${state.logo === "none" ? "Sin logo" : logoName + " · " + nameOf(COLORS.logo, state.logoColor)}</dd>
+    <dt>Short</dt><dd>${nameOf(COLORS.shorts, state.shorts)}</dd>
+    <dt>Zapatillas</dt><dd>${nameOf(COLORS.shoes, state.shoes)}</dd>
+    <dt>Accesorios</dt><dd>${worn.length ? worn.join(", ") : "Nada"}</dd>`;
+}
+function set(key, val) { state[key] = val; syncUI(); apply(); if (key === "tee") showMove(); }   // a new shirt colour gets a move
+document.getElementById("reset").addEventListener("click", () => { state = { ...DEFAULT }; syncUI(); apply(); });
+document.getElementById("random").addEventListener("click", () => {
+  const pick = a => a[Math.floor(Math.random() * a.length)];
+  const cw = pick(COLORS.tee);
+  state = { ...state, tee: cw[1], logoColor: cw[2], shorts: pick(COLORS.shorts)[1], shoes: pick(COLORS.shoes)[1],
+    logo: "wordmark", lensColor: pick(COLORS.lens)[1], skiColor: pick(COLORS.ski)[1] };
+  const cap = pick(COLORS.tee); state.accColor = cap[1]; state.isoColor = cap[2];
+  for (const [k, , opts] of SLOTS) state[k] = Math.random() < 0.45 ? pick(opts.slice(1))[0] : "none";
+  syncUI(); apply(); showMove();
+});
+syncUI();
+
+// ---------- 3D ----------
+const stage = document.getElementById("stage"), statusEl = document.getElementById("status");
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.toneMapping = THREE.NeutralToneMapping; renderer.toneMappingExposure = 0.95;   // keeps product colours faithful
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+stage.prepend(renderer.domElement);
+
+const scene = new THREE.Scene();
+const pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+scene.environmentIntensity = 0.4;
+
+const camera = new THREE.PerspectiveCamera(28, 1, 0.1, 200);
+camera.position.set(9, 7.5, 24);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.set(0, 5.1, 0); controls.enableDamping = true; controls.enablePan = false;
+controls.minDistance = 12; controls.maxDistance = 40; controls.minPolarAngle = 0.35; controls.maxPolarAngle = Math.PI / 2 - 0.02;
+const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+controls.autoRotate = !reduceMotion; controls.autoRotateSpeed = 0.6;
+controls.addEventListener("start", () => controls.autoRotate = false);
+
+scene.add(new THREE.HemisphereLight(0xffffff, 0x8a8a86, 0.55));
+const key = new THREE.DirectionalLight(0xffffff, 1.6); key.position.set(7, 14, 10); key.castShadow = true;
+key.shadow.mapSize.set(2048, 2048); Object.assign(key.shadow.camera, { left: -8, right: 8, top: 14, bottom: -2, near: 1, far: 40 }); key.shadow.bias = -0.0004;
+scene.add(key);
+const rim = new THREE.DirectionalLight(0xffffff, 1.0); rim.position.set(-8, 9, -10); scene.add(rim);
+const floor = new THREE.Mesh(new THREE.CircleGeometry(12, 64), new THREE.ShadowMaterial({ opacity: 0.22 }));
+floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; scene.add(floor);
+
+const parts = {};                                   // material name -> meshes (the model ships as separate pieces)
+let modelRoot = null, teeMesh = null, whiteMesh = null, decals = [], anchor = new THREE.Vector3(0, 10.4, -0.33);
+let mixer = null, current = null; const moves = {}, bones = {}, skinned = [], clock = new THREE.Clock();
+const accGroup = new THREE.Group(); scene.add(accGroup);
+const accMat = new THREE.MeshPhysicalMaterial({ color: state.accColor, roughness: 0.55, clearcoat: 0.25, clearcoatRoughness: 0.5 });
+
+// finish per piece: [roughness, clearcoat]. Vinyl toy parts are glossy, the clothes matte.
+const FINISH = { VB_TEE: [0.78, 0.04], VB_SHORTS: [0.74, 0.06], VB_SHOES: [0.55, 0.25], VB_SOLE: [0.5, 0.3], VB_OUTSOLE: [0.85, 0],
+  VB_LACES: [0.8, 0], VB_PANDA_WHITE: [0.4, 0.4], VB_EYE_WHITE: [0.3, 0.6] };
+function vinyl(name, src) {
+  const [roughness, clearcoat] = FINISH[name] ?? [0.32, 0.55];             // black vinyl: ears, patches, nose, fists
+  const m = new THREE.MeshPhysicalMaterial({ color: src.color, roughness, clearcoat, clearcoatRoughness: 0.3, name, side: THREE.DoubleSide });
+  if (src.normalMap) { m.normalMap = src.normalMap; m.normalScale.copy(src.normalScale); }     // fabric weave baked in Blender
+  if (src.map && src.userData?.vb_painted) { m.map = src.map; m.color.set(0xffffff); m.userData.painted = true; }   // a painted garment keeps its texture
+  if (name === "VB_AIR") Object.assign(m, { transmission: 0.7, thickness: 0.3, roughness: 0.05, clearcoat: 1, ior: 1.4 });   // clear air unit
+  return m;
+}
+
+// the model ships as base64 inside JSON (the host serves .json, not .glb)
+async function loadModel() {
+  // a real web server serves the .glb straight (lighter); the artifact host only serves .json, so fall back to it
+  try {
+    const r = await fetch("og-bandit.glb");
+    if (r.ok && !(r.headers.get("content-type") ?? "").includes("html")) {
+      const buf = await r.arrayBuffer();
+      return await new Promise((ok, fail) => new GLTFLoader().parse(buf, "", ok, fail));
+    }
+  } catch { /* no .glb here */ }
+  const res = await fetch("og-bandit-web.json");
+  if (!res.ok) throw new Error(res.status);
+  const { glb } = await res.json();
+  const bin = Uint8Array.from(atob(glb), ch => ch.charCodeAt(0));
+  return new Promise((ok, fail) => new GLTFLoader().parse(bin.buffer, "", ok, fail));
+}
+loadModel().then(gltf => {
+  const root = gltf.scene;
+  root.traverse(o => {
+    if (o.isMesh) {
+      const n = o.material.name; o.material = vinyl(n, o.material); o.castShadow = o.receiveShadow = true;
+      (parts[n] ??= []).push(o);
+      const big = (cur) => !cur || o.geometry.attributes.position.count > cur.geometry.attributes.position.count;
+      if (n === "VB_TEE" && big(teeMesh)) teeMesh = o;                     // the main shirt surface (prints go on it)
+      if (n === "VB_PANDA_WHITE" && big(whiteMesh)) whiteMesh = o;
+    }
+  });
+  scene.add(root); root.updateMatrixWorld(true); modelRoot = root;
+  // head measured on the model (the crown of the head anchors the hats; the ball centre the glasses and the cap)
+  const hb = new THREE.Box3().setFromObject(whiteMesh);
+  anchor.set((hb.min.x + hb.max.x) / 2, hb.max.y, HEAD.z - 0.04); HEAD.y = hb.max.y - 2.39; EYE_Y = HEAD.y - 0.05; NECK_Y = hb.min.y + 0.15;
+  root.traverse(o => { if (o.isSkinnedMesh) skinned.push(o); if (o.isBone) bones[o.name.replace(/[^A-Za-z]/g, "")] = o; });
+  mixer = new THREE.AnimationMixer(root);
+  for (const clip of gltf.animations) moves[clip.name] = mixer.clipAction(clip);
+  statusEl.remove(); resize(); apply();
+}).catch(() => { statusEl.textContent = "No se pudo cargar el modelo. Recarga la página."; });
+
+// shirt prints: decals projected onto the tee only (front lettering + back arch, sleeve to sleeve)
+function chlorotypeWear(g, w, h, seed) {
+  // Chlorotype bleach print: speckle the ink and fade it slightly toward the sleeves
+  g.globalCompositeOperation = "destination-out";
+  const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  for (let i = 0; i < 5200; i++) {
+    g.globalAlpha = 0.25 + rnd() * 0.6;
+    g.beginPath(); g.arc(rnd() * w, rnd() * h, 0.6 + rnd() * 2.2, 0, Math.PI * 2); g.fill();
+  }
+  const fade = g.createLinearGradient(0, 0, w, 0);
+  fade.addColorStop(0, "rgba(0,0,0,0.35)"); fade.addColorStop(0.25, "rgba(0,0,0,0)");
+  fade.addColorStop(0.75, "rgba(0,0,0,0)"); fade.addColorStop(1, "rgba(0,0,0,0.35)");
+  g.globalAlpha = 1; g.fillStyle = fade; g.fillRect(0, 0, w, h);
+  g.globalCompositeOperation = "source-over";
+}
+function printTexture(img, color, wear) {
+  const c = document.createElement("canvas");
+  c.width = 2048; c.height = Math.round(2048 * img.height / img.width);
+  const g = c.getContext("2d");
+  if (color) g.drawImage(tinted(img, color, c.width, c.height), 0, 0);
+  else g.drawImage(img, 0, 0, c.width, c.height);
+  if (wear) chlorotypeWear(g, c.width, c.height, wear);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t;
+}
+function addPrint(img, color, wear, side, span, maxH) {
+  // side: +1 front, -1 back. Ray onto the tee at chest height, then project a shallow box
+  const y = 5.05;
+  const hit = new THREE.Raycaster(new THREE.Vector3(0, y, 30 * side), new THREE.Vector3(0, 0, -side)).intersectObject(teeMesh, false)[0];
+  const p = hit ? hit.point : new THREE.Vector3(0, y, 1.6 * side);
+  const helper = new THREE.Object3D(); helper.position.copy(p); helper.lookAt(p.clone().add(new THREE.Vector3(0, 0, side)));
+  let w = span, h = span * img.height / img.width;
+  if (h > maxH) { w *= maxH / h; h = maxH; }
+  const mat = new THREE.MeshPhysicalMaterial({ map: printTexture(img, color, wear), transparent: true, roughness: 0.7,
+    depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4 });
+  // the shirt and its sleeves are separate pieces: the print lands on each (sleeve to sleeve), riding its own bones
+  for (const piece of parts.VB_TEE ?? []) {
+    const geo = facingOnly(new DecalGeometry(piece, p, helper.rotation, new THREE.Vector3(w, h, 3.4)), side);  // shallow: never wraps to the other side
+    if (!geo.attributes.position.count) { geo.dispose(); continue; }
+    const m = skinnedToShirt(geo, mat, piece);
+    m.receiveShadow = true; decals.push(m);
+  }
+}
+function skinnedToShirt(geo, mat, tee = teeMesh) {
+  // the print is built on the shirt at rest; each of its vertices borrows the bone weights of the nearest
+  // shirt vertex, so it moves with the shirt when the toy walks or dances
+  const tp = tee.geometry.attributes.position, si = tee.geometry.attributes.skinIndex, sw = tee.geometry.attributes.skinWeight;
+  if (!si) { const m = new THREE.Mesh(geo, mat); scene.add(m); return m; }
+  const cell = 0.25, grid = new Map(), v = new THREE.Vector3(), key = (x, y, z) => `${x},${y},${z}`;
+  const world = [];
+  for (let i = 0; i < tp.count; i++) {
+    v.fromBufferAttribute(tp, i).applyMatrix4(tee.matrixWorld); world.push(v.x, v.y, v.z);
+    const k = key(Math.floor(v.x / cell), Math.floor(v.y / cell), Math.floor(v.z / cell));
+    (grid.get(k) ?? grid.set(k, []).get(k)).push(i);
+  }
+  const pos = geo.attributes.position, nor = geo.attributes.normal, n = pos.count;
+  const idx = new Uint16Array(n * 4), wts = new Float32Array(n * 4);
+  const inv = tee.matrixWorld.clone().invert(), nInv = new THREE.Matrix3().getNormalMatrix(inv);
+  for (let i = 0; i < n; i++) {
+    v.fromBufferAttribute(pos, i);
+    const cx = Math.floor(v.x / cell), cy = Math.floor(v.y / cell), cz = Math.floor(v.z / cell);
+    let best = -1, bd = Infinity;
+    for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) for (let dz = -1; dz <= 1; dz++)
+      for (const j of grid.get(key(cx + dx, cy + dy, cz + dz)) ?? []) {
+        const d = (world[3 * j] - v.x) ** 2 + (world[3 * j + 1] - v.y) ** 2 + (world[3 * j + 2] - v.z) ** 2;
+        if (d < bd) { bd = d; best = j; }
+      }
+    for (let k = 0; k < 4; k++) { idx[4 * i + k] = best >= 0 ? si.getComponent(best, k) : 0; wts[4 * i + k] = best >= 0 ? sw.getComponent(best, k) : (k ? 0 : 1); }
+    v.applyMatrix4(inv); pos.setXYZ(i, v.x, v.y, v.z);
+    v.fromBufferAttribute(nor, i).applyMatrix3(nInv).normalize(); nor.setXYZ(i, v.x, v.y, v.z);
+  }
+  geo.setAttribute("skinIndex", new THREE.Uint16BufferAttribute(idx, 4));
+  geo.setAttribute("skinWeight", new THREE.Float32BufferAttribute(wts, 4));
+  const m = new THREE.SkinnedMesh(geo, mat);
+  m.position.copy(tee.position); m.quaternion.copy(tee.quaternion); m.scale.copy(tee.scale);
+  tee.parent.add(m); m.bind(tee.skeleton, tee.bindMatrix);
+  return m;
+}
+function facingOnly(geo, side, minFacing = 0.35) {
+  // drop triangles seen at a grazing angle (sleeve sides), where a projected print would smear into streaks
+  const pos = geo.attributes.position, nor = geo.attributes.normal, uv = geo.attributes.uv;
+  const keep = { position: [], normal: [], uv: [] };
+  for (let t = 0; t < pos.count; t += 3) {
+    let nz = 0;
+    for (let k = 0; k < 3; k++) nz += nor.getZ(t + k);
+    if (side * nz / 3 < minFacing) continue;
+    for (let k = 0; k < 3; k++) {
+      const i = t + k;
+      keep.position.push(pos.getX(i), pos.getY(i), pos.getZ(i));
+      keep.normal.push(nor.getX(i), nor.getY(i), nor.getZ(i));
+      keep.uv.push(uv.getX(i), uv.getY(i));
+    }
+  }
+  const out = new THREE.BufferGeometry();
+  out.setAttribute("position", new THREE.Float32BufferAttribute(keep.position, 3));
+  out.setAttribute("normal", new THREE.Float32BufferAttribute(keep.normal, 3));
+  out.setAttribute("uv", new THREE.Float32BufferAttribute(keep.uv, 2));
+  geo.dispose(); return out;
+}
+function updateDecal() {
+  const mats = new Set(decals.map(d => d.material));
+  for (const d of decals) { d.parent?.remove(d); d.geometry.dispose(); }
+  for (const m of mats) { m.map?.dispose(); m.dispose(); }
+  decals = [];
+  if (!teeMesh) return;
+  if (state.logo === "wordmark") {
+    if (art.wordmark) addPrint(art.wordmark, state.logoColor, 7, 1, 7.1, 2.2);   // front: a touch narrower so the ends stay readable on the sleeves
+    if (art.back) addPrint(art.back, state.logoColor, 11, -1, 6.1, 2.2);         // back: narrower so the first and last letters stay on the flat of the back
+  } else if (state.logo === "upload" && uploadedImage) {
+    addPrint(uploadedImage, null, 0, 1, 4.6, 1.8);
+  }
+}
+
+// ---------- accessories ----------
+// Head ball of the model (measured in Blender, three.js axes: y up, +z = face)
+const HEAD = { x: 0, y: 8.0, z: -0.29, rx: 2.97, ry: 2.4, rz: 2.37 };     // ry: upper half (the v3 head is taller above its centre)
+let EYE_Y = 7.95, NECK_Y = 6.02;   // both set from the model on load (the chain hangs from the neck)
+// metals carry their own environment so they read as polished gold/silver (the scene's is kept low for the vinyl)
+const metalMat = (color, roughness) => new THREE.MeshPhysicalMaterial({ color, metalness: 1, roughness, clearcoat: 0.6,
+  clearcoatRoughness: 0.12, envMap: scene.environment, envMapIntensity: 1.5, side: THREE.DoubleSide });
+const metal = { gold: metalMat(0xf2bf4c, 0.2), silver: metalMat(0xdde1e5, 0.16) };
+const blackGloss = new THREE.MeshPhysicalMaterial({ color: 0x0c0c0d, roughness: 0.18, clearcoat: 1, clearcoatRoughness: 0.08 });
+const blackMatte = new THREE.MeshPhysicalMaterial({ color: 0x141415, roughness: 0.55, clearcoat: 0.2 });
+const knitMat = new THREE.MeshPhysicalMaterial({ color: state.accColor, roughness: 0.92, side: THREE.DoubleSide });
+const clavaMat = new THREE.MeshPhysicalMaterial({ color: 0x111112, roughness: 0.92, side: THREE.DoubleSide });   // the balaclava only comes in black
+
+function frontZ(x, y) {
+  // z of the model surface seen straight from the front (face relief, muzzle, chest)
+  const hit = modelRoot && new THREE.Raycaster(new THREE.Vector3(x, y, 30), new THREE.Vector3(0, 0, -1)).intersectObject(modelRoot, true)[0];
+  return hit ? hit.point.z : HEAD.z + HEAD.rz;
+}
+function addIsotype(group, front, y, h) {
+  const iso = art.isotipo; if (!front || !iso) return;
+  group.updateMatrixWorld(true);
+  const hit = new THREE.Raycaster(new THREE.Vector3(0, y, 30), new THREE.Vector3(0, 0, -1)).intersectObject(front, false)[0];
+  if (!hit) return;
+  const helper = new THREE.Object3D(); helper.position.copy(hit.point);
+  helper.lookAt(hit.point.clone().add(hit.face.normal.clone().transformDirection(front.matrixWorld)));
+  const w = h * iso.width / iso.height;
+  const tex = new THREE.CanvasTexture(tinted(iso, state.isoColor, 310, Math.round(310 * iso.height / iso.width)));
+  tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 4;
+  const mat = new THREE.MeshPhysicalMaterial({ map: tex, transparent: true, roughness: 0.5, clearcoat: 0.3, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4 });
+  group.add(new THREE.Mesh(new DecalGeometry(front, hit.point, helper.rotation, new THREE.Vector3(w, h, 1.2)), mat));
+}
+
+function buildHat(g) {
+  const top = anchor.y;
+  if (state.hat === "beanie") {
+    const dome = new THREE.Mesh(new THREE.SphereGeometry(2.25, 48, 24, 0, Math.PI * 2, 0, Math.PI * 0.5), accMat);
+    dome.scale.set(1.05, 0.95, 1.02); dome.position.set(0, top - 1.15, anchor.z + 0.1);
+    // ribbed cuff
+    const cuffGeo = new THREE.CylinderGeometry(2.42, 2.42, 0.62, 96, 1, true);
+    const cp = cuffGeo.attributes.position;
+    for (let i = 0; i < cp.count; i++) {
+      const a = Math.atan2(cp.getX(i), cp.getZ(i)), r = 1 + 0.025 * Math.cos(a * 48);
+      cp.setXYZ(i, cp.getX(i) * r, cp.getY(i), cp.getZ(i) * r);
+    }
+    cuffGeo.computeVertexNormals();
+    const cuff = new THREE.Mesh(cuffGeo, knitMat); cuff.position.set(0, top - 0.95, anchor.z + 0.12);
+    const pom = new THREE.Mesh(new THREE.IcosahedronGeometry(0.55, 3), accMat); pom.position.set(0, top + 1.05, anchor.z + 0.1);
+    g.add(dome, cuff, pom);
+    addIsotype(g, dome, top - 0.2, 1.0);
+  } else if (state.hat === "cap") {
+    // crown: a slightly larger copy of the head ball, cut just above the brow and lower at the back,
+    // so it sits down on the head (the ears come out through it)
+    const C = new THREE.Vector3(HEAD.x, HEAD.y, HEAD.z);
+    const edge = (th) => 0.42 - 0.36 * (1 - Math.cos(th)) / 2;              // elevation of the band, radians
+    const crownPt = (th, t) => {
+      const ph = edge(th) + (Math.PI / 2 - 0.002 - edge(th)) * t;
+      const d = new THREE.Vector3(Math.cos(ph) * Math.sin(th), Math.sin(ph), Math.cos(ph) * Math.cos(th));
+      const p = C.clone().addScaledVector(d, 1.07 / Math.hypot(d.x / HEAD.rx, d.y / HEAD.ry, d.z / HEAD.rz) + 0.05);
+      p.y = C.y + (p.y - C.y) * (1 + 0.16 * t);                            // a taller, structured crown
+      return p;
+    };
+    const capMat = accMat.clone(); capMat.map = capSeams(); capMat.side = THREE.DoubleSide;
+    const crown = new THREE.Mesh(gridGeo(120, 28, (u, v) => crownPt(u * 2 * Math.PI, v)), capMat);
+    const button = new THREE.Mesh(new THREE.SphereGeometry(0.2, 20, 10), accMat);
+    button.position.copy(crownPt(0, 1)).y -= 0.06;
+    // rolled inner band hides the cut edge
+    const rim = [];
+    for (let i = 0; i < 120; i++) rim.push(crownPt(i / 120 * 2 * Math.PI, 0));
+    const band = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(rim, true), 240, 0.06, 8, true), accMat);
+    // brim: D-shaped, longest at the centre and meeting the crown at the sides, pitched down with curved sides
+    const thB = 1.25;
+    const brimPt = (u, s, under) => {
+      const th = (u * 2 - 1) * thB;
+      const e = crownPt(th, 0).lerp(C, 0.03);
+      const reach = 1.85 * Math.pow(Math.max(0, Math.cos(th / thB * Math.PI / 2)), 0.6);
+      const p = e.addScaledVector(new THREE.Vector3(Math.sin(th) * 0.4, 0, Math.cos(th)).normalize(), reach * s);
+      p.y -= reach * s * 0.2 + 0.46 * (Math.sin(th) / Math.sin(thB)) ** 2 * s + (under ? 0.1 : 0);
+      return p;
+    };
+    const brim = new THREE.Group(), brimMat = accMat.clone(); brimMat.side = THREE.DoubleSide;
+    brim.add(new THREE.Mesh(gridGeo(64, 12, (u, v) => brimPt(u, v, false)), brimMat),
+             new THREE.Mesh(gridGeo(64, 12, (u, v) => brimPt(u, v, true)), brimMat),
+             new THREE.Mesh(gridGeo(64, 1, (u, v) => brimPt(u, 1, v > 0.5)), brimMat));
+    g.add(crown, button, band, brim);
+    addIsotype(g, crown, top - 0.42, 0.95);
+  } else if (state.hat === "crown") {
+    // band with five spikes, a ball on each tip and a diamond stud between them
+    const H = 0.95, geo = new THREE.CylinderGeometry(2.05, 1.85, H, 120, 8, true);
+    const pp = geo.attributes.position;
+    for (let i = 0; i < pp.count; i++) {
+      const y = pp.getY(i), a = Math.atan2(pp.getX(i), pp.getZ(i));
+      const spike = Math.pow((Math.cos(5 * a) + 1) / 2, 3);
+      pp.setY(i, y + spike * 0.75 * (y + H / 2) / H);
+    }
+    geo.computeVertexNormals();
+    const crown = new THREE.Group(), gold = metal.gold;
+    crown.add(new THREE.Mesh(geo, gold));
+    for (let k = 0; k < 5; k++) {
+      const a = k * 2 * Math.PI / 5;
+      const ball = new THREE.Mesh(new THREE.SphereGeometry(0.24, 24, 16), gold);
+      ball.position.set(Math.sin(a) * 2.07, H / 2 + 0.78, Math.cos(a) * 2.07); crown.add(ball);
+      const stud = new THREE.Mesh(new THREE.OctahedronGeometry(0.2), gold);
+      const b = a + Math.PI / 5;
+      stud.scale.set(1, 1.5, 0.5); stud.position.set(Math.sin(b) * 1.98, -0.02, Math.cos(b) * 1.98); stud.lookAt(0, -0.02, 0);
+      crown.add(stud);
+    }
+    crown.scale.set(1, 1, 0.86); crown.rotation.z = -0.1;
+    crown.position.set(0.1, top - 0.05, anchor.z + 0.1);
+    g.add(crown);
+  }
+}
+let seamTex = null;
+function capSeams() {
+  // six-panel cap: seams with a double stitch, multiplied over the cap colour (u runs round the head, v up)
+  if (seamTex) return seamTex;
+  const c = document.createElement("canvas"); c.width = 2048; c.height = 512;
+  const g = c.getContext("2d");
+  g.fillStyle = "#fff"; g.fillRect(0, 0, c.width, c.height);
+  for (let k = 0; k < 6; k++) {
+    const x = (k + 0.5) / 6 * c.width;
+    g.fillStyle = "rgba(0,0,0,0.32)"; g.fillRect(x - 3, 0, 6, c.height);
+    g.strokeStyle = "rgba(0,0,0,0.22)"; g.lineWidth = 2; g.setLineDash([9, 7]);
+    for (const dx of [-14, 14]) { g.beginPath(); g.moveTo(x + dx, 0); g.lineTo(x + dx, c.height * 0.97); g.stroke(); }
+  }
+  g.setLineDash([9, 7]); g.strokeStyle = "rgba(0,0,0,0.25)";
+  g.beginPath(); g.moveTo(0, c.height - 22); g.lineTo(c.width, c.height - 22); g.stroke();  // stitch above the band (v = 0 is the band)
+  seamTex = new THREE.CanvasTexture(c); seamTex.colorSpace = THREE.SRGBColorSpace; seamTex.anisotropy = 8;
+  return seamTex;
+}
+
+// ---------- geometry helpers for rigid pieces round the head ----------
+function gridGeo(cols, rows, at) {
+  // at(u, v) -> Vector3 on a (cols x rows) grid; returns an indexed, smooth-shaded surface
+  const verts = [], uvs = [], index = [];
+  for (let i = 0; i <= cols; i++) for (let j = 0; j <= rows; j++) {
+    const p = at(i / cols, j / rows); verts.push(p.x, p.y, p.z); uvs.push(i / cols, j / rows);
+  }
+  for (let i = 0; i < cols; i++) for (let j = 0; j < rows; j++) {
+    const a = i * (rows + 1) + j, b = a + rows + 1;
+    index.push(a, b, a + 1, b, b + 1, a + 1);
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute("position", new THREE.Float32BufferAttribute(verts, 3));
+  geo.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+  geo.setIndex(index); geo.computeVertexNormals();
+  return geo;
+}
+const around = (a, y, r) => new THREE.Vector3(HEAD.x + Math.sin(a) * r, y, HEAD.z + Math.cos(a) * r);
+const smooth = (e0, e1, x) => { const t = Math.min(1, Math.max(0, (x - e0) / (e1 - e0))); return t * t * (3 - 2 * t); };
+function surfaceR(a, y) {
+  // distance from the head axis to the model surface, looking in from angle a (0 = front) at height y
+  const dir = new THREE.Vector3(Math.sin(a), 0, Math.cos(a)), centre = new THREE.Vector3(HEAD.x, y, HEAD.z);
+  const hit = new THREE.Raycaster(centre.clone().addScaledVector(dir, 20), dir.clone().negate()).intersectObject(modelRoot, true)[0];
+  return hit ? hit.point.clone().sub(centre).dot(dir) : Math.hypot(dir.x * HEAD.rx, dir.z * HEAD.rz);
+}
+function rigidShell(a0, a1, range) {
+  // a rigid front that clears the face: each vertical slice stands at the most forward point of the face
+  // over that height, smoothed side to side, so the eye relief never shows through
+  const N = 96, rs = [];
+  for (let i = 0; i <= N; i++) {
+    const a = a0 + (a1 - a0) * i / N, [y0, y1] = range(a);
+    let r = 0; for (let j = 0; j <= 6; j++) r = Math.max(r, surfaceR(a, y0 + (y1 - y0) * j / 6));
+    rs.push(r);
+  }
+  const sm = rs.map((_, i) => { let t = 0, w = 0; for (let k = -6; k <= 6; k++) { const v = rs[i + k]; if (v !== undefined) { t += v; w++; } } return t / w; });
+  return (a) => { const f = Math.min(N, Math.max(0, (a - a0) / (a1 - a0) * N)), i = Math.floor(f), t = f - i;
+    return sm[i] * (1 - t) + sm[Math.min(N, i + 1)] * t; };
+}
+function solidBand(a0, a1, range, rIn, rOut, mat, { cols = 72, bevel = 0.06 } = {}) {
+  // a piece with real thickness round the head: range(a) -> [yBottom, yTop], rIn/rOut(a) -> back and front radius.
+  // The cross-section is a rectangle with softened corners (smooth-shaded, so the edges read rounded).
+  const section = (a) => {
+    const [y0, y1] = range(a), r0 = rIn(a), r1 = rOut(a);
+    const c = Math.min(bevel, (y1 - y0) / 3, (r1 - r0) / 2), ym = (y0 + y1) / 2;
+    return [[y0, r0], [y0, r1 - c], [y0 + c * 0.3, r1 - c * 0.3], [y0 + c, r1], [ym, r1],
+            [y1 - c, r1], [y1 - c * 0.3, r1 - c * 0.3], [y1, r1 - c], [y1, r0], [ym, r0], [y0, r0]];
+  };
+  const n = 10, group = new THREE.Group();
+  group.add(new THREE.Mesh(gridGeo(cols, n, (u, v) => {
+    const a = a0 + (a1 - a0) * u, s = section(a)[Math.round(v * n)];
+    return around(a, s[0], s[1]);
+  }), mat));
+  for (const a of [a0, a1]) {                                                // end caps (fan from the middle)
+    const s = section(a), mid = around(a, (s[0][0] + s[8][0]) / 2, (s[0][1] + s[4][1]) / 2), verts = [];
+    for (let k = 0; k < n; k++) verts.push(mid, around(a, ...s[k]), around(a, ...s[k + 1]));
+    const geo = new THREE.BufferGeometry().setFromPoints(verts); geo.computeVertexNormals();
+    group.add(new THREE.Mesh(geo, mat));
+  }
+  return group;
+}
+
+
+function buildEyes(g) {
+  const lift = state.clava === "on" ? 0.12 : 0;                          // sit over the balaclava
+  const Y = EYE_Y;
+  if (state.eyes === "sun") {
+    // sport shield in the Oakley spirit: one wraparound lens with a nose cut, swept to a point at each temple,
+    // a sculpted brow bar that thickens toward the hinges, and broad temples with a colour accent
+    const frame = new THREE.MeshPhysicalMaterial({ color: 0x0e0e10, roughness: 0.3, clearcoat: 0.9, clearcoatRoughness: 0.18, side: THREE.DoubleSide });
+    const lens = new THREE.MeshPhysicalMaterial({ color: state.lensColor, metalness: 0.7, roughness: 0.05, clearcoat: 1,
+      iridescence: 1, iridescenceIOR: 1.6, iridescenceThicknessRange: [180, 620],
+      envMap: scene.environment, envMapIntensity: 1.6, side: THREE.DoubleSide });
+    const lensTop = (a) => { const u = Math.abs(a); return Y + 0.5 + 0.07 * smooth(0.1, 0.85, u) - 0.34 * smooth(0.88, 1.2, u) ** 1.4; };
+    const lensBot = (a) => { const u = Math.abs(a); return Y - 0.5 + 0.6 * (1 - smooth(0.08, 0.36, u)) + 0.66 * smooth(0.6, 1.2, u) ** 1.6; };
+    const A = 1.27;
+    const shell = rigidShell(-A, A, (a) => [lensBot(a) - 0.05, lensTop(a) + 0.28]);
+    const at = (k) => (a) => shell(a) + k + lift;
+    // lens (thin, sits inside the bar)
+    g.add(solidBand(-1.2, 1.2, (a) => [lensBot(a), lensTop(a) + 0.04], at(0.27), at(0.33), lens, { cols: 120, bevel: 0.02 }));
+    // brow bar: lower edge over the lens, upper edge rising toward the hinges
+    const barRange = (a) => { const u = Math.abs(a); return [lensTop(a) - 0.07, lensTop(a) + 0.2 + 0.1 * smooth(0.45, 1.15, u)]; };
+    g.add(solidBand(-A, A, barRange, at(0.2), (a) => shell(a) + 0.46 - 0.08 * smooth(0.95, A, Math.abs(a)) + lift, frame, { cols: 120, bevel: 0.08 }));
+    // temples: broad at the hinge, tapering back over the side of the head
+    for (const s of [-1, 1]) {
+      const hingeR = shell(s * A) + lift, yc = (a) => Y + 0.43 + 0.06 * (a - A);
+      const prof = []; for (let i = 0; i <= 24; i++) { const a = A - 0.06 + 0.8 * i / 24; prof.push(surfaceR(s * a, yc(a))); }
+      const surf = (a) => { const f = Math.min(24, Math.max(0, (a - A + 0.06) / 0.8 * 24)), i = Math.floor(f); return prof[i] + (prof[Math.min(24, i + 1)] - prof[i]) * (f - i); };
+      const rIn = (a) => { const t = smooth(A, A + 0.3, a); return (hingeR + 0.22) * (1 - t) + (surf(a) + 0.05 + lift) * t; };
+      const half = (a) => 0.19 - 0.08 * smooth(A, A + 0.75, a);
+      const temple = solidBand(A - 0.06, A + 0.74, (a) => [yc(a) - half(a), yc(a) + half(a)], rIn, (a) => rIn(a) + 0.15 - 0.04 * smooth(A, A + 0.5, a), frame, { cols: 40, bevel: 0.05 });
+      // colour accent on the outside of each temple
+      const icon = solidBand(A + 0.14, A + 0.42, (a) => { const k = Math.max(0, Math.sin(Math.PI * (a - A - 0.14) / 0.28)) ** 0.5 * 0.07; return [yc(a) - k, yc(a) + k]; },
+        (a) => rIn(a) + 0.1, (a) => rIn(a) + 0.17, lens, { cols: 24, bevel: 0.02 });
+      if (s < 0) { temple.scale.x = -1; icon.scale.x = -1; temple.position.x = icon.position.x = 2 * HEAD.x; }
+      g.add(temple, icon);
+    }
+  } else if (state.eyes === "ski") {
+    // big ski goggle: thick, soft-edged matte frame round an amber lens, outriggers and a white strap with the logo
+    const frame = new THREE.MeshPhysicalMaterial({ color: 0x141416, roughness: 0.62, clearcoat: 0.25, clearcoatRoughness: 0.5, side: THREE.DoubleSide });
+    const lensMat = new THREE.MeshPhysicalMaterial({ map: amberTexture(state.skiColor), metalness: 0.3, roughness: 0.06, clearcoat: 1,
+      iridescence: 0.6, iridescenceIOR: 1.4, envMap: scene.environment, envMapIntensity: 1.3, side: THREE.DoubleSide });
+    const top = (a) => Y + 0.86 - 0.1 * a * a;
+    const bot = (a) => Y - 0.78 + 0.56 * (1 - smooth(0.12, 0.42, Math.abs(a))) + 0.06 * a * a;   // nose notch
+    const A = 1.32, L = 1.1, RIM = 0.34;
+    const shell = rigidShell(-A, A, (a) => [bot(a) - RIM, top(a) + RIM]);
+    const back = (a) => shell(a) + 0.16 + lift, front = (a) => shell(a) + 0.68 + lift;
+    const opt = { cols: 120, bevel: 0.14 };
+    g.add(solidBand(-A, A, (a) => [top(a) - 0.04, top(a) + RIM], back, front, frame, opt));
+    g.add(solidBand(-A, A, (a) => [bot(a) - RIM, bot(a) + 0.04], back, front, frame, opt));
+    for (const s of [-1, 1]) {
+      const [a0, a1] = s > 0 ? [L - 0.04, A] : [-A, -L + 0.04];
+      g.add(solidBand(a0, a1, (a) => [bot(a), top(a)], back, front, frame, { cols: 16, bevel: 0.14 }));
+      // outrigger where the strap clips on
+      const [o0, o1] = s > 0 ? [A - 0.04, A + 0.16] : [-A - 0.16, -A + 0.04];
+      g.add(solidBand(o0, o1, () => [Y - 0.42, Y + 0.42], (a) => shell(s * A) + 0.1 + lift, (a) => shell(s * A) + 0.48 + lift, frame, { cols: 8, bevel: 0.1 }));
+    }
+    // lens set back inside the frame, so the rim stands proud of it
+    g.add(solidBand(-L, L, (a) => [bot(a) - 0.02, top(a) + 0.02], (a) => shell(a) + 0.32 + lift, (a) => shell(a) + 0.54 + lift, lensMat, { cols: 120, bevel: 0.03 }));
+    const strap = new THREE.MeshPhysicalMaterial({ map: strapTexture(), roughness: 0.85, side: THREE.DoubleSide });
+    g.add(wrapBand(A + 0.1, 2 * Math.PI - A - 0.1, () => [Y - 0.36, Y + 0.36], 0.1 + lift, strap, 96, 4));
+  }
+}
+
+function amberTexture(tone = "#f7a11d") {
+  // mirrored ski lens, lighter at the top: orange (amber) or blue
+  const stops = tone === "#2f6fe0" ? ["#a9dcff", "#3f86f0", "#173f9e"] : ["#ffe27a", "#f7b21d", "#d9750b"];
+  const c = document.createElement("canvas"); c.width = 8; c.height = 256;
+  const g = c.getContext("2d"), grd = g.createLinearGradient(0, 0, 0, 256);
+  grd.addColorStop(0, stops[0]); grd.addColorStop(0.45, stops[1]); grd.addColorStop(1, stops[2]);
+  g.fillStyle = grd; g.fillRect(0, 0, 8, 256);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+function strapTexture() {
+  const c = document.createElement("canvas"); c.width = 2048; c.height = 160;
+  const g = c.getContext("2d");
+  g.fillStyle = "#ecebe6"; g.fillRect(0, 0, c.width, c.height);
+  g.fillStyle = "#111"; g.fillRect(0, 0, c.width, 14); g.fillRect(0, c.height - 14, c.width, 14);
+  const logo = art.logo;
+  if (logo) {
+    const h = 92, w = h * logo.width / logo.height;
+    for (const cx of [c.width * 0.25, c.width * 0.75]) g.drawImage(tinted(logo, "#111", Math.round(w), h), cx - w / 2, (c.height - h) / 2);
+  }
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t;
+}
+
+function wrapBand(a0, a1, range, offset, mat, cols = 72, rows = 8) {
+  // a soft band laid round the head (straps), following the surface: from angle a0 to a1 (0 = front),
+  // range(a) -> [yBottom, yTop]
+  return new THREE.Mesh(gridGeo(cols, rows, (u, v) => {
+    const a = a0 + (a1 - a0) * u, [y0, y1] = range(a), y = y0 + (y1 - y0) * v;
+    return around(a, y, surfaceR(a, y) + offset);
+  }), mat);
+}
+
+function buildPhones(g) {
+  if (state.phones === "none") return;
+  const shell = state.phones === "silver" ? metal.silver : blackGloss;
+  const trim = state.phones === "silver" ? blackMatte : metal.silver;
+  const cy = 8.15, cz = 0.25;
+  for (const s of [-1, 1]) {
+    const cup = new THREE.Mesh(new THREE.CylinderGeometry(0.98, 0.98, 0.62, 40), shell);
+    cup.rotation.z = Math.PI / 2; cup.position.set(s * 3.2, cy, cz);
+    const pad = new THREE.Mesh(new THREE.TorusGeometry(0.78, 0.2, 16, 40), blackMatte);
+    pad.rotation.y = Math.PI / 2; pad.position.set(s * 2.88, cy, cz);
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.98, 0.07, 10, 48), trim);
+    ring.rotation.y = Math.PI / 2; ring.position.set(s * 3.52, cy, cz);
+    const yoke = new THREE.Mesh(new RoundedBoxGeometry(0.22, 0.9, 0.3, 2, 0.08), trim);
+    yoke.position.set(s * 3.42, cy + 1.05, cz);
+    g.add(cup, pad, ring, yoke);
+  }
+  const band = new THREE.Mesh(new THREE.TorusGeometry(3.42, 0.2, 14, 72, Math.PI), shell);
+  band.scale.set(1, 0.86, 1); band.position.set(0, cy + 1.45, cz);
+  g.add(band);
+}
+
+function buildBalaclava(g) {
+  if (state.clava !== "on" || !whiteMesh) return;
+  // knit shell = the head surface itself pushed out a little (fits exactly), with an oval face opening
+  const geo = whiteMesh.geometry.clone().applyMatrix4(whiteMesh.matrixWorld).toNonIndexed();
+  const pos = geo.attributes.position, nor = geo.attributes.normal, keep = [];
+  const O = { x: 0, y: 7.85, rx: 2.25, ry: 1.12 };                          // face opening (front view)
+  const inOpening = (x, y, z) => z > 0.2 && ((x - O.x) / O.rx) ** 2 + ((y - O.y) / O.ry) ** 2 < 1;
+  for (let t = 0; t < pos.count; t += 3) {
+    let cx = 0, cy = 0, cz = 0;
+    for (let k = 0; k < 3; k++) { cx += pos.getX(t + k); cy += pos.getY(t + k); cz += pos.getZ(t + k); }
+    if (inOpening(cx / 3, cy / 3, cz / 3)) continue;
+    for (let k = 0; k < 3; k++) {
+      const i = t + k;
+      keep.push(pos.getX(i) + nor.getX(i) * 0.12, pos.getY(i) + nor.getY(i) * 0.12, pos.getZ(i) + nor.getZ(i) * 0.12);
+    }
+  }
+  const out = new THREE.BufferGeometry(); out.setAttribute("position", new THREE.Float32BufferAttribute(keep, 3));
+  out.computeVertexNormals();
+  g.add(new THREE.Mesh(out, clavaMat));
+  // rolled edge round the opening hides the cut
+  const pts = [];
+  for (let i = 0; i < 96; i++) {
+    const a = i / 96 * Math.PI * 2, x = O.x + Math.cos(a) * O.rx, y = O.y + Math.sin(a) * O.ry;
+    pts.push(new THREE.Vector3(x, y, frontZ(x, y) + 0.1));
+  }
+  const rim = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts, true), 160, 0.13, 10, true), clavaMat);
+  g.add(rim);
+}
+
+function buildChain(g) {
+  if (state.chain === "none") return;
+  const mat = metal[state.chain];
+  // links follow a loop round the neck that sags onto the chest
+  const path = (t) => {
+    const c = Math.cos(t);
+    return new THREE.Vector3(2.3 * Math.sin(t), NECK_Y - 0.62 * Math.max(0, c) ** 2, HEAD.z + 2.08 * c + 0.12);
+  };
+  const link = new THREE.TorusGeometry(0.14, 0.05, 8, 18); link.scale(1.55, 1, 1); link.rotateY(Math.PI / 2);
+  const N = 72;
+  for (let i = 0; i < N; i++) {
+    const t = i / N * Math.PI * 2, p = path(t), q = path(t + 0.01);
+    if (Math.cos(t) < -0.2) continue;                                      // hidden behind the head anyway
+    p.z = Math.max(p.z, frontZ(p.x, p.y) + 0.08 * Math.max(0, Math.cos(t)));
+    const m = new THREE.Mesh(link, mat); m.position.copy(p); m.lookAt(q); if (i % 2) m.rotateZ(Math.PI / 2);
+    g.add(m);
+  }
+}
+
+function buildWatch(g) {
+  if (state.watch === "none") return;
+  const mat = metal[state.watch];
+  // left wrist, just below the sleeve cuff, on the axis of the forearm (cuff ring measured on the model)
+  const axis = new THREE.Vector3(0.22, -0.975, 0).normalize();               // a little more upright than the sleeve, so it reads level
+  const fistL = parts.VB_FISTS.find(f => new THREE.Box3().setFromObject(f).getCenter(new THREE.Vector3()).x > 0);
+  const c = new THREE.Box3().setFromObject(fistL).getCenter(new THREE.Vector3()).addScaledVector(axis, 0.1);   // round the fist, under the sleeve
+  const u = new THREE.Vector3(0, 0, 1), w = new THREE.Vector3().crossVectors(axis, u).normalize();
+  const dirAt = (t) => u.clone().multiplyScalar(Math.cos(t)).addScaledVector(w, Math.sin(t));
+  // band hugs the fist's cross-section; where the fist presses into the body there is no surface, so fill in
+  const N = 64, R = [], fist = parts.VB_FISTS;
+  for (let k = 0; k < N; k++) {
+    const d = dirAt(k / N * 2 * Math.PI);
+    const hit = new THREE.Raycaster(c.clone().addScaledVector(d, 4), d.clone().negate()).intersectObjects(fist, false)[0];
+    const r = hit ? 4 - hit.distance : NaN;
+    R.push(r > 0.4 && r < 1.4 ? r : NaN);
+  }
+  for (let pass = 0; pass < N; pass++) R.forEach((r, k) => { if (isNaN(r)) { const a = R[(k + N - 1) % N], b = R[(k + 1) % N];
+    if (!isNaN(a) || !isNaN(b)) R[k] = isNaN(a) ? b : isNaN(b) ? a : (a + b) / 2; } });
+  const Rs = R.map((_, k) => { let s = 0; for (let j = -3; j <= 3; j++) s += R[(k + j + N) % N]; return s / 7; });
+  const radius = (t) => { const f = ((t / (2 * Math.PI)) % 1 + 1) % 1 * N, i = Math.floor(f) % N; return Rs[i] + (Rs[(i + 1) % N] - Rs[i]) * (f - Math.floor(f)); };
+  const W = 0.2, T = 0.11, gap = 0.04;
+  const sec = [[-W, 0], [-W, T], [-W * 0.8, T * 1.25], [W * 0.8, T * 1.25], [W, T], [W, 0], [-W, 0]];
+  g.add(new THREE.Mesh(gridGeo(N * 2, sec.length - 1, (s, v) => {
+    const t = s * 2 * Math.PI, [ax, rr] = sec[Math.round(v * (sec.length - 1))];
+    return c.clone().addScaledVector(axis, ax).addScaledVector(dirAt(t), radius(t) + gap + rr);
+  }), mat));
+  // case on the outer, front-facing side of the wrist
+  const td = -0.65, d = dirAt(td).normalize(), q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), d);
+  const base = c.clone().addScaledVector(d, radius(td) + gap + T + 0.1);
+  const piece = (geo, m, h) => { const o = new THREE.Mesh(geo, m); o.quaternion.copy(q); o.position.copy(base).addScaledVector(d, h); g.add(o); return o; };
+  piece(new THREE.CylinderGeometry(0.56, 0.6, 0.24, 48), mat, 0);
+  piece(new THREE.TorusGeometry(0.5, 0.075, 12, 48).rotateX(Math.PI / 2), mat, 0.13);                          // bezel
+  const dialMat = new THREE.MeshPhysicalMaterial({ color: 0x0d0d0e, roughness: 0.25, clearcoat: 1, clearcoatRoughness: 0.05 });
+  piece(new THREE.CylinderGeometry(0.44, 0.44, 0.02, 48), dialMat, 0.125);
+  for (let h = 0; h < 12; h++) {                                                                             // hour markers
+    const m = piece(new THREE.BoxGeometry(h % 3 ? 0.04 : 0.06, 0.02, h % 3 ? 0.08 : 0.13), mat, 0.14);
+    const a = h / 12 * 2 * Math.PI;
+    m.position.addScaledVector(new THREE.Vector3(Math.sin(a) * 0.34, 0, Math.cos(a) * 0.34).applyQuaternion(q), 1);
+    m.quaternion.multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), a));
+  }
+  const crownBtn = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.075, 0.12, 16), mat);                 // winding crown, toward the hand
+  crownBtn.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), axis);
+  crownBtn.position.copy(base).addScaledVector(axis, 0.64); g.add(crownBtn);
+}
+
+let attached = [];
+function buildAccessory() {
+  // built in world space at rest, then handed to the bone they ride on (head, chest, left hand)
+  for (const g of attached) g.parent?.remove(g);
+  attached = [];
+  if (!modelRoot) return;
+  const onHead = new THREE.Group(), onChest = new THREE.Group(), onWrist = new THREE.Group();
+  buildHat(onHead); buildEyes(onHead); buildPhones(onHead); buildBalaclava(onHead); buildChain(onChest); buildWatch(onWrist);
+  for (const [g, bone] of [[onHead, "head"], [onChest, "chest"], [onWrist, "handL"]]) {
+    g.traverse(o => { if (o.isMesh) o.castShadow = true; });
+    scene.add(g); (bones[bone] ?? scene).attach(g); attached.push(g);
+  }
+}
+
+// ---------- movements ----------
+const MOVES = { idle: ["MOV_1_IDLE", true], dance: ["MOV_3_BAILE", true],
+  briefcase: ["MOV_4_MALETIN", true], pose: ["MOV_5_POSE", false] };
+function atRest(fn) {
+  // the accessories and prints are fitted to the toy standing still, then the movement carries on
+  const time = current?.time ?? 0, playing = current;
+  mixer?.stopAllAction(); for (const s of skinned) s.skeleton.pose();
+  modelRoot?.updateMatrixWorld(true);
+  fn();
+  if (playing) { playing.reset().play(); playing.time = time; }
+}
+function playMove(id) {
+  if (!mixer) return;
+  const [name, loop] = MOVES[id] ?? [];
+  const next = moves[name];
+  if (current && current !== next) current.fadeOut(0.35);
+  current = next ?? null;
+  if (!next) { if (!id || id === "none") setTimeout(() => { if (!current) { mixer.stopAllAction(); for (const s of skinned) s.skeleton.pose(); } }, 360); return; }
+  next.reset(); next.setLoop(loop ? THREE.LoopRepeat : THREE.LoopOnce, Infinity); next.clampWhenFinished = !loop;
+  next.fadeIn(0.35).play();
+}
+// The toy always comes back to the idle with flow. Every so often, and each time the shirt colour changes,
+// it breaks into one of its moves (in turn: bandit pose, dance, briefcase idle) and then settles back.
+const SPECIALS = [["pose", 4.5], ["dance", 4.2], ["briefcase", 7.0]];   // [move, seconds before going back to the idle]
+const IDLE_GAP = 10;                                                    // seconds of idle between moves
+const STILL = matchMedia("(prefers-reduced-motion: reduce)").matches;
+let turn = 0, moveTimer = null;
+function toIdle() {
+  playMove("idle"); clearTimeout(moveTimer);
+  moveTimer = setTimeout(showMove, IDLE_GAP * 1000);
+}
+function showMove() {
+  if (STILL || !mixer) return;
+  const [id, secs] = SPECIALS[turn++ % SPECIALS.length];
+  playMove(id); clearTimeout(moveTimer);
+  moveTimer = setTimeout(toIdle, secs * 1000);
+}
+
+function apply() {
+  for (const [name, key] of [["VB_TEE", "tee"], ["VB_SHORTS", "shorts"], ["VB_SHOES", "shoes"]])
+    for (const m of parts[name] ?? []) if (!m.material.userData.painted) m.material.color.set(state[key]);
+  accMat.color.set(state.accColor); knitMat.color.set(state.accColor);
+  artReady.then(() => {
+    atRest(() => { buildAccessory(); updateDecal(); });
+    if (!current && !STILL) toIdle();                                       // starts once the model is in
+  });
+}
+
+function resize() {
+  const r = stage.getBoundingClientRect();
+  renderer.setSize(r.width, r.height, false);
+  camera.aspect = r.width / r.height;
+  const offset = camera.position.clone().sub(controls.target);
+  offset.setLength(r.width / r.height < 1.05 ? 31 : 25);
+  camera.position.copy(controls.target).add(offset);
+  camera.updateProjectionMatrix();
+}
+new ResizeObserver(resize).observe(stage);
+renderer.setAnimationLoop(() => { mixer?.update(Math.min(clock.getDelta(), 0.1)); controls.update(); renderer.render(scene, camera); });
+</script>
+</html>
