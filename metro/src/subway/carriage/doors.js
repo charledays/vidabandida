@@ -3,7 +3,7 @@
  * pockets behind the wall lining. set(left, right) takes 0 (closed) .. 1 (open) per leaf.
  */
 import * as THREE from 'three';
-import { CAR, WORDMARK } from '../config.js';
+import { CAR, DOOR_TAG } from '../config.js';
 import { roundedRect, tracker } from '../geo.js';
 
 export function createDoors(mats, registry) {
@@ -13,10 +13,10 @@ export function createDoors(mats, registry) {
 
   var leafW = CAR.doorWidth / 2;
 
-  // One big Charle$Days tag painted across both leaves below the windows. Each leaf carries its
-  // half, so the tag splits down the seam as the doors open.
-  var TAG = WORDMARK;
-  var tagW = CAR.doorWidth * 0.86;
+  // The VIDABANDIDA isotype painted across both leaves below the windows. Each leaf carries its
+  // half, so it splits down the seam as the doors open.
+  var TAG = DOOR_TAG;
+  var tagW = CAR.doorWidth * 0.3;
   var tagH = tagW * (TAG.crop[3] - TAG.crop[1]) / (TAG.crop[2] - TAG.crop[0]);
   function tagHalf(u0) {
     var geo = keep(new THREE.PlaneGeometry(tagW / 2, tagH));
@@ -89,7 +89,7 @@ export function createDoors(mats, registry) {
 
     // This leaf's half of the tag, butted against the meeting edge (painted over the rubber).
     var tag = new THREE.Mesh(tagHalves[side], tagMat);
-    tag.position.set(-side * (leafW / 2 - tagW / 4), 0.74, depth + 0.012);
+    tag.position.set(-side * (leafW / 2 - tagW / 4), 0.62, depth + 0.012);
     leaf.add(tag);
     return leaf;
   }

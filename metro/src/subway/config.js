@@ -88,8 +88,10 @@ export var TRAVEL = {
 /** Stepping out: the walk from the seat through the doors onto the platform (and back), seconds. */
 export var DOOR_WALK = 1.6;
 
-/** The VIDABANDIDA wordmark (white on transparent), cropped to its lettering. Used on the doors and the line map. */
-export var WORDMARK = { src: '/og-bandit/vb-wordmark.png', crop: [8, 11, 1830, 337], size: [1839, 347] };
+/** The VIDABANDIDA logo (white on transparent), cropped to its lettering. Used on the line map and the station tablets. */
+export var WORDMARK = { src: '/metro/images/web/vb/logo-block.png', crop: [0, 0, 1587, 276], size: [1587, 276] };
+/** The VIDABANDIDA isotype (white on transparent), painted across the door leaves. */
+export var DOOR_TAG = { src: '/og-bandit/vb-isotipo.png', crop: [0, 0, 619, 989], size: [619, 989] };
 
 export var PALETTE = {
   steel: 0xb9bcbf,

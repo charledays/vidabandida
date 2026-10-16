@@ -117,14 +117,15 @@ function floorTexture(registry) {
 /** 3×6" white subway tile with grout and soot. */
 function tileTexture(registry) {
   var w = 512, h = 512, c = canvas(w, h), ctx = c.getContext('2d'), rand = rng(41);
-  ctx.fillStyle = '#6b665c';
+  // Dark grey glazed tile (the VIDABANDIDA line), near-black grout.
+  ctx.fillStyle = '#0c0c0d';
   ctx.fillRect(0, 0, w, h);
   var tw = 64, th = 32;
   for (var row = 0; row < h / th; row++) {
     var off = row % 2 ? tw / 2 : 0;
     for (var col = -1; col < w / tw + 1; col++) {
-      var v = 214 + rand() * 22 | 0;
-      ctx.fillStyle = 'rgb(' + v + ',' + (v - 4) + ',' + (v - 12) + ')';
+      var v = 30 + rand() * 9 | 0;
+      ctx.fillStyle = 'rgb(' + v + ',' + v + ',' + (v + 2) + ')';
       ctx.fillRect(col * tw + off + 2, row * th + 2, tw - 4, th - 4);
     }
   }

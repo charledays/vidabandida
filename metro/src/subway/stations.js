@@ -16,14 +16,14 @@ export var adArt = [
 /**
  * The circle line, in order; after the last stop the train comes back around to the first.
  * Each station feeds the station template (name tablets, signs), the line map (name, note, href)
- * and the visit sign on the platform wall (name, href). No billboard and no takeover: the platforms
- * are bare tile for now (the walls and columns get dressed once the artwork is agreed).
+ * and the paste-up poster on the platform wall (poster, href: the way into that section). No billboard
+ * and no takeover: dark tile with marker tags.
  */
 export var stations = [
-  { id: 'shop', name: 'VIDABANDIDA Shop', note: 'Catálogo', href: '/#catalogo' },
-  { id: 'og-bandit', name: 'OG Bandit', note: 'Personaliza tu OG BANDIT', href: '/og-bandit/' },
-  { id: 'featured', name: 'Featured', note: 'Collabs', href: '/#catalogo' },
-  { id: 'filosofia', name: 'Filosofía', note: 'Bandidaje fino', href: '/#filosofia' }
+  { id: 'shop', name: 'VIDABANDIDA Shop', note: 'Catálogo', href: '/#catalogo', poster: V + 'pasteup-shop.webp' },
+  { id: 'og-bandit', name: 'OG Bandit', note: 'Personaliza tu OG BANDIT', href: '/og-bandit/', poster: V + 'pasteup-og-bandit.webp' },
+  { id: 'featured', name: 'Featured', note: 'Collabs', href: '/#catalogo', poster: V + 'pasteup-featured.webp' },
+  { id: 'filosofia', name: 'Filosofía', note: 'Bandidaje fino', href: '/#filosofia', poster: V + 'pasteup-filosofia.webp' }
 ];
 
 /** The line map's stops are the stations themselves, so the map and the ride always agree. */

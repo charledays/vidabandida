@@ -5,7 +5,7 @@
  * billboard sits right behind the doors.
  */
 import * as THREE from 'three';
-import { WORLD, CAR } from '../config.js';
+import { WORLD, CAR, WORDMARK } from '../config.js';
 import { LINE } from '../stations.js';
 import { tracker, textCanvas, canvasTexture, frameGeometry } from '../geo.js';
 import { createTakeover, TAKEOVER } from './takeover.js';
@@ -14,32 +14,47 @@ import { rng } from '../materials.js';
 var SIGN_FONT = '"Helvetica Neue", Helvetica, Arial, sans-serif';
 var TABLET_FONT = 'Georgia, "Times New Roman", serif';
 
-/** Classic mosaic name tablet: maroon border, cream field, dark lettering. */
+/**
+ * Name tablet: black enamel with an orange rule, the VIDABANDIDA logo across the top and the stop's
+ * name under it (for the shop stop, just SHOP). The logo is drawn in once it has loaded.
+ */
+var logoImage = null;
 function tabletTexture(registry, name) {
-  var c = textCanvas(1024, 300, function (ctx, w, h) {
-    ctx.fillStyle = '#5a1d1a';
-    ctx.fillRect(0, 0, w, h);
-    ctx.fillStyle = '#b48a3c';
-    ctx.fillRect(18, 18, w - 36, h - 36);
-    ctx.fillStyle = '#e8dfc8';
-    ctx.fillRect(40, 40, w - 80, h - 80);
-    ctx.fillStyle = '#1d1a16';
-    ctx.font = '700 ' + h * 0.38 + 'px ' + TABLET_FONT;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(name.toUpperCase(), w / 2, h / 2 + 6, w - 140);
-    // Mosaic grid and grime.
-    ctx.fillStyle = 'rgba(40,30,20,0.18)';
-    for (var x = 0; x < w; x += 12) ctx.fillRect(x, 0, 1.2, h);
-    for (var y = 0; y < h; y += 12) ctx.fillRect(0, y, w, 1.2);
-    var g = ctx.createLinearGradient(0, 0, 0, h);
-    g.addColorStop(0, 'rgba(30,22,12,0.25)');
-    g.addColorStop(0.4, 'rgba(30,22,12,0)');
-    g.addColorStop(1, 'rgba(30,22,12,0.15)');
-    ctx.fillStyle = g;
-    ctx.fillRect(0, 0, w, h);
-  });
-  return canvasTexture(c, registry);
+  var label = name.replace(/^VIDABANDIDA\s*/i, '').toUpperCase();
+  var c = textCanvas(1024, 300, function (ctx, w, h) { paintTablet(ctx, w, h, label, null); });
+  var tex = canvasTexture(c, registry);
+  if (!logoImage) { logoImage = new Image(); logoImage.src = WORDMARK.src; }
+  function withLogo() {
+    paintTablet(c.getContext('2d'), c.width, c.height, label, logoImage);
+    tex.needsUpdate = true;
+  }
+  if (logoImage.complete && logoImage.naturalWidth) withLogo();
+  else logoImage.addEventListener('load', withLogo);
+  return tex;
+}
+function paintTablet(ctx, w, h, label, logo) {
+  ctx.fillStyle = '#0e0e0f';
+  ctx.fillRect(0, 0, w, h);
+  ctx.fillStyle = LINE.color;
+  ctx.fillRect(0, 0, w, 10);
+  ctx.fillRect(0, h - 10, w, 10);
+  if (logo) {
+    var lw = w * 0.74, lh = lw * logo.naturalHeight / logo.naturalWidth;
+    ctx.drawImage(logo, (w - lw) / 2, h * 0.16, lw, lh);
+  }
+  ctx.fillStyle = '#f0ebe1';
+  ctx.font = '700 ' + h * 0.2 + 'px ' + SIGN_FONT;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  if (ctx.letterSpacing !== undefined) ctx.letterSpacing = '6px';
+  ctx.fillText(label, w / 2, h * 0.76, w - 120);
+  // Enamel grime toward the edges.
+  var g = ctx.createLinearGradient(0, 0, 0, h);
+  g.addColorStop(0, 'rgba(0,0,0,0.25)');
+  g.addColorStop(0.4, 'rgba(0,0,0,0)');
+  g.addColorStop(1, 'rgba(0,0,0,0.2)');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, w, h);
 }
 
 /** Black hanging sign with the line bullet and station name in white. */
@@ -173,13 +188,13 @@ function wallFootTexture(registry) {
 
 function bandTexture(registry) {
   var c = textCanvas(256, 64, function (ctx, w, h) {
-    ctx.fillStyle = '#6b2420';
+    ctx.fillStyle = '#141414';
     ctx.fillRect(0, 0, w, h);
-    ctx.fillStyle = '#b48a3c';
+    ctx.fillStyle = '#D63B0C';
     ctx.fillRect(0, 8, w, 6);
     ctx.fillRect(0, h - 14, w, 6);
     for (var x = 0; x < w; x += 32) {
-      ctx.fillStyle = '#d9c9a0';
+      ctx.fillStyle = '#3a3a3c';
       ctx.fillRect(x + 10, 22, 12, 20);
     }
   });
@@ -410,6 +425,42 @@ function visitTabTexture(registry, w, h) {
  * gap(a, b): signed shortest distance from b to a around the circle line. content: the
  * station's resolved takeover (content.js), or null for a plain station.
  */
+/**
+ * Paint-marker tags on the tiles: VDBA and "bandidaje fino", scattered along the wall either side of
+ * the poster, at hand height (under the name tablets). Seeded per station, so they stay put.
+ */
+var TAGS = [
+  { src: '/metro/images/web/vb/tag-vdba-white.png', aspect: 576 / 316, h: 0.42 },
+  { src: '/metro/images/web/vb/tag-vdba-accent.png', aspect: 520 / 292, h: 0.36 },
+  { src: '/metro/images/web/vb/tag-bf-white.png', aspect: 735 / 292, h: 0.4 },
+  { src: '/metro/images/web/vb/tag-bf-cream.png', aspect: 854 / 172, h: 0.2 },
+  { src: '/metro/images/web/vb/tag-vdba-silver.png', aspect: 436 / 205, h: 0.3 }
+];
+var tagMats = {};
+function wallTags(data, loader, keep, track) {
+  var group = new THREE.Group();
+  var rand = rng(data.id.charCodeAt(0) * 97 + data.id.length * 13);
+  var x = -18 + rand() * 2;
+  while (x < 18) {
+    var spec = TAGS[Math.floor(rand() * TAGS.length)];
+    var h = spec.h * (0.8 + rand() * 0.5), w = h * spec.aspect;
+    var cx = x + w / 2;
+    // Keep the poster (x = 0) clear.
+    if (Math.abs(cx) < 0.6 + w / 2) { x = 0.65; continue; }
+    if (!tagMats[spec.src]) {
+      var mat = track(new THREE.MeshStandardMaterial({ transparent: true, alphaTest: 0.25, roughness: 0.55, depthWrite: false }));
+      loader.load(spec.src, function (m) { return function (tex) { tex.colorSpace = THREE.SRGBColorSpace; m.map = tex; m.needsUpdate = true; }; }(mat));
+      tagMats[spec.src] = mat;
+    }
+    var mesh = new THREE.Mesh(keep(new THREE.PlaneGeometry(w, h)), tagMats[spec.src]);
+    mesh.position.set(cx, 0.45 + rand() * 1.35, WORLD.station.wallZ + 0.006 + rand() * 0.002);
+    mesh.rotation.z = (rand() - 0.5) * 0.12;
+    group.add(mesh);
+    x += w + 0.4 + rand() * 1.6;
+  }
+  return group;
+}
+
 export function buildStation(data, mats, registry, loader, gap, content, options) {
   var keep = tracker(registry);
   var S = WORLD.station;
@@ -466,6 +517,7 @@ export function buildStation(data, mats, registry, loader, gap, content, options
   var wall = new THREE.Mesh(keep(new THREE.PlaneGeometry(len, S.ceilingY)), tileMat);
   wall.position.set(0, S.ceilingY / 2, S.wallZ);
   group.add(wall);
+  if (!content) group.add(wallTags(data, loader, keep, track));
 
   // Station identity (frieze, name tablets, hanging signs) only where there's no takeover: a
   // taken-over stop gives that wall to the work, and its name stays on the map and the display.
@@ -638,39 +690,54 @@ export function buildStation(data, mats, registry, loader, gap, content, options
   if (!content && !(data.billboard && data.billboard.src)) board.visible = false;
 
   /**
-   * The visit sign: a lightbox on the wall straight ahead of where you stand when you step out
-   * (station x = 0, between the ceiling beams), over the art, with a lit VISIT tab; a click
-   * takes you to the station's page (main.js). Idle it's dim; under the pointer it lights up
-   * from inside and throws light on the wall. Real stops only.
+   * The way in: a paste-up poster slapped on the tiles straight ahead of where you stand when you
+   * step out (station x = 0), badly stuck: a little crooked, crumpled, the top corner peeling off
+   * the wall. A click takes you to the stop's page (main.js). Under the pointer it lifts and brightens.
    */
   var sign = null;
   var lit = 0;
-  if (!data.secret && data.href) {
-    var SW = 1.9, SH = 0.34, SD = 0.04, TW = 0.46, TH = 0.2;
+  var posterMat = null;
+  if (!data.secret && data.href && data.poster) {
+    var PW = 1.02, PH = 1.36;
+    var pgeo = keep(new THREE.PlaneGeometry(PW, PH, 14, 18));
+    var pos = pgeo.attributes.position, prand = rng(data.id.length * 131 + 7);
+    var bumps = [];
+    for (var b = 0; b < 7; b++) bumps.push([(prand() - 0.5) * PW, (prand() - 0.5) * PH, 0.08 + prand() * 0.18, (prand() - 0.5) * 0.02]);
+    for (var i = 0; i < pos.count; i++) {
+      var px = pos.getX(i), py = pos.getY(i), dz = 0;
+      // Paste dried in lumps: soft bubbles and creases.
+      bumps.forEach(function (k) {
+        var d2 = ((px - k[0]) * (px - k[0]) + (py - k[1]) * (py - k[1])) / (k[2] * k[2]);
+        dz += k[3] * Math.exp(-d2);
+      });
+      // The top-right corner has come unstuck and curls away from the wall.
+      var u = px / PW + 0.5, v = py / PH + 0.5;
+      var peel = Math.max(0, (u + v - 1.45) / 0.55);
+      dz += 0.16 * peel * peel;
+      pos.setZ(i, Math.abs(dz) + 0.004);
+    }
+    pgeo.computeVertexNormals();
+    posterMat = track(new THREE.MeshStandardMaterial({ color: 0xd8d4cc, roughness: 0.92, alphaTest: 0.5, side: THREE.DoubleSide }));
+    loader.load(data.poster, function (tex) {
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.anisotropy = 8;
+      registry.textures.push(tex);
+      posterMat.map = tex;
+      posterMat.needsUpdate = true;
+    });
     sign = new THREE.Group();
-    // A slim box, no case: the face on the front, and the box's own edges, which glow with it.
-    var edgeMat = track(new THREE.MeshBasicMaterial({ color: 0x141414, toneMapped: false }));
-    var box = new THREE.Mesh(keep(new THREE.BoxGeometry(SW, SH, SD)), edgeMat);
-    box.position.z = -SD / 2;
-    var faceMat = track(new THREE.MeshBasicMaterial({ map: visitSignTexture(registry, data.name, 2048, Math.round(2048 * SH / SW)), toneMapped: false }));
-    var face = new THREE.Mesh(keep(new THREE.PlaneGeometry(SW, SH)), faceMat);
-    face.position.z = 0.001;
-    var tabMat = track(new THREE.MeshBasicMaterial({ map: visitTabTexture(registry, 512, Math.round(512 * TH / TW)), transparent: true, toneMapped: false }));
-    tabMat.color.setScalar(1.15);
-    var tab = new THREE.Mesh(keep(new THREE.PlaneGeometry(TW, TH)), tabMat);
-    tab.position.set(SW / 2 - TW / 2 - 0.08, -0.015, 0.003);
-    sign.add(box, face, tab);
-    // Clear of the ceiling beams (over the column lines) and of any billboard's frame below.
-    sign.position.set(0, 3.45, S.wallZ + 0.03 + SD);
+    sign.add(new THREE.Mesh(pgeo, posterMat));
+    sign.rotation.z = (prand() - 0.5) * 0.09;
+    sign.position.set(0, 1.42, S.wallZ + 0.01);
     group.add(sign);
   }
-  /** hover: pointer on the sign (the box lights up); dt for easing. */
+  /** hover: pointer on the poster (it lifts off the wall a little and brightens); dt for easing. */
   function setSign(hover, dt) {
     if (!sign) return;
     lit += ((hover ? 1 : 0) - lit) * Math.min(1, (dt || 0.016) * 9);
-    // Lit from inside: the face comes up and the edges glow warm white.
-    faceMat.color.setScalar(0.5 + 0.7 * lit);
-    edgeMat.color.setRGB(0.08 + 0.82 * lit, 0.08 + 0.79 * lit, 0.08 + 0.72 * lit);
+    posterMat.color.setScalar(0.85 + 0.25 * lit);
+    sign.position.z = S.wallZ + 0.01 + 0.05 * lit;
+    sign.scale.setScalar(1 + 0.03 * lit);
   }
 
   /** Hover over the open doorway: the hero lifts a little (0..1). */
