@@ -202,6 +202,7 @@ function start() {
     var stop = lastState && stations[lastState.stationIndex];
     if (!stop || !stop.href) return false;
     exit = { t0: performance.now(), href: stop.href, gone: false };
+    if (window.vbTrack) window.vbTrack('metro_exit', { station: stop.id });
     setBusy('exit');
     // Coming back (the browser's back button) lands you in your seat at this same stop, doors open.
     try { sessionStorage.setItem(BACK_KEY, String(lastState.stationIndex)); } catch (e) { /* private mode */ }
