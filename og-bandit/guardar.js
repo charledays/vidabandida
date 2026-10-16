@@ -1,5 +1,5 @@
 /**
- * "Guardar mi OG BANDIT": a short form (A.K.A, skills, city), then a 1080 × 1350 image of the toy as it is
+ * "Guardar mi OG BANDIT": a short form (A.K.A, skills, city), then a 1080 × 1920 image (an Instagram story) of the toy as it is
  * dressed right now, on a dark industrial wall, with a short ABOUT: who made it, their
  * skills, the colorway and every piece it wears. Download it or share it straight from the phone.
  *
@@ -8,7 +8,9 @@
  * endpoint is set there, to the list of people who made one.
  */
 const api = new Proxy({}, { get: (_, k) => window.__ogb[k] });   // set by the dress-up's module
-const W = 1080, H = 1350;
+const W = 1080, H = 1920;                                // Instagram story
+/** Keep clear of Instagram's own bars: the profile row on top, the reply bar at the bottom. */
+const SAFE_TOP = 230, SAFE_BOTTOM = 260;
 const INK = "#0d0d0e", CREAM = "#efeae0", ACC = "#D63B0C";
 const MONO = '"IBM Plex Mono", ui-monospace, Menlo, monospace';
 const SANS = '"Archivo Narrow", "Helvetica Neue", Arial, sans-serif';
@@ -124,7 +126,8 @@ function photo(w, h) {
   camera.aspect = w / h;
   const t = controls.target;
   // far enough back for the whole toy, head to soles, with room around it
-  camera.position.set(t.x + 6.5, t.y + 0.9, t.z + 35); camera.lookAt(t); camera.updateProjectionMatrix();
+  // close enough that the toy fills most of the frame, head to soles
+  camera.position.set(t.x + 5.6, t.y + 0.8, t.z + 27.5); camera.lookAt(t); camera.updateProjectionMatrix();
   renderer.render(scene, camera);
   const c = document.createElement("canvas"); c.width = w; c.height = h;
   c.getContext("2d").drawImage(renderer.domElement, 0, 0, w, h);
@@ -146,7 +149,7 @@ function industrial(g) {
   }
   // steel panels: seams and rivets
   g.strokeStyle = "rgba(0,0,0,0.75)"; g.lineWidth = 3;
-  const cols = [270, 540, 810], rowY = 760;
+  const cols = [270, 540, 810], rowY = 1180;
   for (const x of cols) { g.beginPath(); g.moveTo(x, 0); g.lineTo(x, H); g.stroke(); }
   g.beginPath(); g.moveTo(0, rowY); g.lineTo(W, rowY); g.stroke();
   g.strokeStyle = "rgba(255,255,255,0.05)"; g.lineWidth = 1;
@@ -185,24 +188,24 @@ async function compose({ aka, skills, city, look }) {
   industrial(g);
 
   // the toy, standing in the light, with a contact shadow
-  const TX = 700, FEET = 1030;                                       // where the toy stands
+  const TX = W / 2, FEET = 1415;                                     // where the toy stands
   const sh = g.createRadialGradient(TX, FEET / 0.2, 10, TX, FEET / 0.2, 230);
   sh.addColorStop(0, "rgba(0,0,0,0.7)"); sh.addColorStop(1, "rgba(0,0,0,0)");
   g.save(); g.scale(1, 0.2); g.fillStyle = sh; g.fillRect(TX - 260, FEET / 0.2 - 260, 520, 520); g.restore();
-  const toy = photo(900, 1125);
-  // the toy fills about 58 % of the photo's height, centred in it: drop it so its soles land on FEET
-  g.drawImage(toy, TX - 450, FEET - 562 - 330, 900, 1125);
+  const toy = photo(1080, 1350);
+  // the toy fills about 77 % of the photo's height, centred in it: drop it so its soles land on FEET
+  g.drawImage(toy, TX - 540, FEET - 675 - 520, 1080, 1350);
 
   // header: the logo, the title, and whose it is
   const no = String(Math.floor(Date.now() / 1000) % 100000).padStart(5, "0");
-  if (logo) { const lw = 300, lh = lw * logo.naturalHeight / logo.naturalWidth; g.globalAlpha = 0.95; g.drawImage(logo, 56, 58, lw, lh); g.globalAlpha = 1; }
+  if (logo) { const lw = 190, lh = lw * logo.naturalHeight / logo.naturalWidth; g.globalAlpha = 0.95; g.drawImage(logo, 56, SAFE_TOP, lw, lh); g.globalAlpha = 1; }
   g.fillStyle = "rgba(239,234,224,0.6)"; g.textBaseline = "alphabetic";
   g.font = `500 17px ${MONO}`; g.textAlign = "right";
-  g.fillText(`Nº ${no}`, W - 56, 82);
+  g.fillText(`Nº ${no}`, W - 56, SAFE_TOP + 24);
   g.textAlign = "left"; g.fillStyle = CREAM;
-  g.font = `700 92px ${SANS}`; g.fillText("OG BANDIT", 50, 214);
-  fit(g, aka.toUpperCase(), 620, { weight: 600, size: 36, family: SANS });
-  g.fillStyle = ACC; g.fillText(aka.toUpperCase(), 54, 262);
+  g.font = `700 58px ${SANS}`; g.fillText("OG BANDIT", 52, SAFE_TOP + 112);
+  fit(g, aka.toUpperCase(), 560, { weight: 600, size: 26, family: SANS });
+  g.fillStyle = ACC; g.fillText(aka.toUpperCase(), 55, SAFE_TOP + 148);
 
   // about: just the data, set close like a technical sheet, nothing labelled (the name is already above)
   const x = 56, w = 400;
@@ -210,7 +213,7 @@ async function compose({ aka, skills, city, look }) {
   g.font = `500 17px ${MONO}`;
   const lines = facts.flatMap((f, i) => (i ? [null] : []).concat(wrap(g, f, w)));   // null: a rule between facts
   const h = 44 + lines.reduce((n, l) => n + (l === null ? 14 : 23), 0);
-  let ty = H - 120 - h;
+  let ty = FEET + 92;                                               // under the shoes
   g.fillStyle = CREAM; g.font = `700 22px ${SANS}`; g.fillText("ABOUT", x, ty);
   g.fillStyle = "rgba(239,234,224,0.35)"; g.fillRect(x, ty + 14, w, 1);
   ty += 44;
@@ -223,7 +226,9 @@ async function compose({ aka, skills, city, look }) {
 
   // footer
   g.fillStyle = "rgba(239,234,224,0.5)"; g.font = `500 14px ${MONO}`;
-  g.fillText(`VIDABANDIDA.ART/OG-BANDIT · ${new Date().toLocaleDateString("es-PE")}`, x, H - 56);
-  g.textAlign = "right"; g.fillText("LIMA, PERÚ", W - 56, H - 56); g.textAlign = "left";
+  g.textAlign = "right";
+  g.fillText("VIDABANDIDA.ART/OG-BANDIT", W - 56, SAFE_TOP + 48);
+  g.fillText(new Date().toLocaleDateString("es-PE"), W - 56, SAFE_TOP + 70);
+  g.textAlign = "left";
   return c;
 }
