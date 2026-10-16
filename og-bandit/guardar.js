@@ -127,7 +127,7 @@ function photo(w, h) {
   const t = controls.target;
   // far enough back for the whole toy, head to soles, with room around it
   // close enough that the toy fills most of the frame, head to soles
-  camera.position.set(t.x + 5.6, t.y + 0.8, t.z + 27.5); camera.lookAt(t); camera.updateProjectionMatrix();
+  camera.position.set(t.x + 5.0, t.y + 0.7, t.z + 24.5); camera.lookAt(t); camera.updateProjectionMatrix();
   renderer.render(scene, camera);
   const c = document.createElement("canvas"); c.width = w; c.height = h;
   c.getContext("2d").drawImage(renderer.domElement, 0, 0, w, h);
@@ -171,6 +171,13 @@ function industrial(g) {
   vig.addColorStop(0, "rgba(0,0,0,0)"); vig.addColorStop(1, "rgba(0,0,0,0.78)");
   g.fillStyle = vig; g.fillRect(0, 0, W, H);
 }
+/** Type that may sit over the toy: a soft black aura round every letter so it reads on white vinyl too. */
+function aura(g, draw) {
+  // a wide soft halo, then a tight dense one hugging the letters, then the type itself on top
+  g.save(); g.shadowColor = "rgba(0,0,0,1)"; g.shadowOffsetX = 0; g.shadowOffsetY = 0;
+  for (const blur of [26, 26, 12, 12, 5, 5, 2]) { g.shadowBlur = blur; draw(); }
+  g.restore(); draw();
+}
 function fit(g, text, max, font) { let s = font.size; g.font = `${font.weight} ${s}px ${font.family}`; while (g.measureText(text).width > max && s > 10) { s -= 1; g.font = `${font.weight} ${s}px ${font.family}`; } return s; }
 function wrap(g, text, max) {
   const words = text.split(" "), lines = []; let line = "";
@@ -188,24 +195,24 @@ async function compose({ aka, skills, city, look }) {
   industrial(g);
 
   // the toy, standing in the light, with a contact shadow
-  const TX = W / 2, FEET = 1415;                                     // where the toy stands
+  const TX = W / 2, FEET = 1535;                                     // where the toy stands
   const sh = g.createRadialGradient(TX, FEET / 0.2, 10, TX, FEET / 0.2, 230);
   sh.addColorStop(0, "rgba(0,0,0,0.7)"); sh.addColorStop(1, "rgba(0,0,0,0)");
   g.save(); g.scale(1, 0.2); g.fillStyle = sh; g.fillRect(TX - 260, FEET / 0.2 - 260, 520, 520); g.restore();
   const toy = photo(1080, 1350);
-  // the toy fills about 77 % of the photo's height, centred in it: drop it so its soles land on FEET
-  g.drawImage(toy, TX - 540, FEET - 675 - 520, 1080, 1350);
+  // the toy fills about 87 % of the photo's height, centred in it: drop it so its soles land on FEET
+  g.drawImage(toy, TX - 540, FEET - 675 - 587, 1080, 1350);
 
   // header: the logo, the title, and whose it is
   const no = String(Math.floor(Date.now() / 1000) % 100000).padStart(5, "0");
   if (logo) { const lw = 190, lh = lw * logo.naturalHeight / logo.naturalWidth; g.globalAlpha = 0.95; g.drawImage(logo, 56, SAFE_TOP, lw, lh); g.globalAlpha = 1; }
   g.fillStyle = "rgba(239,234,224,0.6)"; g.textBaseline = "alphabetic";
   g.font = `500 17px ${MONO}`; g.textAlign = "right";
-  g.fillText(`Nº ${no}`, W - 56, SAFE_TOP + 24);
+  aura(g, () => g.fillText(`Nº ${no}`, W - 56, SAFE_TOP + 24));
   g.textAlign = "left"; g.fillStyle = CREAM;
-  g.font = `700 58px ${SANS}`; g.fillText("OG BANDIT", 52, SAFE_TOP + 112);
+  g.font = `700 58px ${SANS}`; aura(g, () => g.fillText("OG BANDIT", 52, SAFE_TOP + 112));
   fit(g, aka.toUpperCase(), 560, { weight: 600, size: 26, family: SANS });
-  g.fillStyle = ACC; g.fillText(aka.toUpperCase(), 55, SAFE_TOP + 148);
+  g.fillStyle = ACC; aura(g, () => g.fillText(aka.toUpperCase(), 55, SAFE_TOP + 148));
 
   // about: just the data, set close like a technical sheet, nothing labelled (the name is already above)
   const x = 56, w = 400;
@@ -213,22 +220,25 @@ async function compose({ aka, skills, city, look }) {
   g.font = `500 17px ${MONO}`;
   const lines = facts.flatMap((f, i) => (i ? [null] : []).concat(wrap(g, f, w)));   // null: a rule between facts
   const h = 44 + lines.reduce((n, l) => n + (l === null ? 14 : 23), 0);
-  let ty = FEET + 92;                                               // under the shoes
-  g.fillStyle = CREAM; g.font = `700 22px ${SANS}`; g.fillText("ABOUT", x, ty);
-  g.fillStyle = "rgba(239,234,224,0.35)"; g.fillRect(x, ty + 14, w, 1);
+  // sits at the bottom, clear of Instagram's reply bar; it may cross the shoes, so every line gets the aura
+  let ty = H - SAFE_BOTTOM - 14 - h;
+  const rule = (y, a) => aura(g, () => { g.fillStyle = `rgba(239,234,224,${a})`; g.fillRect(x, y, w, 1); });
+  g.fillStyle = CREAM; g.font = `700 22px ${SANS}`; aura(g, () => g.fillText("ABOUT", x, ty));
+  rule(ty + 14, 0.45);
   ty += 44;
   g.font = `500 17px ${MONO}`;
   for (const l of lines) {
-    if (l === null) { g.fillStyle = "rgba(239,234,224,0.16)"; g.fillRect(x, ty - 12, w, 1); ty += 14; continue; }
-    g.fillStyle = CREAM; g.fillText(l, x, ty); ty += 23;
+    if (l === null) { rule(ty - 12, 0.25); ty += 14; continue; }
+    g.fillStyle = CREAM; aura(g, () => g.fillText(l, x, ty)); ty += 23;
   }
-  g.fillStyle = "rgba(239,234,224,0.35)"; g.fillRect(x, ty - 8, w, 1);
+  rule(ty - 8, 0.45);
 
   // footer
   g.fillStyle = "rgba(239,234,224,0.5)"; g.font = `500 14px ${MONO}`;
   g.textAlign = "right";
-  g.fillText("VIDABANDIDA.ART/OG-BANDIT", W - 56, SAFE_TOP + 48);
-  g.fillText(new Date().toLocaleDateString("es-PE"), W - 56, SAFE_TOP + 70);
+  aura(g, () => g.fillText("VIDABANDIDA.ART/OG-BANDIT", W - 56, SAFE_TOP + 48));
+  const date = new Date().toLocaleDateString("es-PE");
+  aura(g, () => g.fillText(date, W - 56, SAFE_TOP + 70));
   g.textAlign = "left";
   return c;
 }
