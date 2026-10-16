@@ -208,7 +208,7 @@ function tinted(img, color, w, h) {
 }
 
 // ---------- UI ----------
-const TABS = [["tee","Camiseta"],["logo","Logo"],["shorts","Short"],["shoes","Zapatillas"],["acc","Accesorios"]];
+const TABS = [["tee","Camiseta"],["shorts","Short"],["shoes","Zapatillas"],["acc","Accesorios"]];   // the lettering is part of the shirt: no logo options
 const tabsEl = document.getElementById("tabs"), panesEl = document.getElementById("panes");
 function nameOf(list, hex) { const f = list.find(([, h]) => h.toLowerCase() === hex.toLowerCase()); return f ? f[0] : "Personalizado"; }
 
@@ -240,7 +240,6 @@ function optionGroup(key, list, label) {
 }
 const panes = {
   tee: [swatchGroup("tee", COLORS.tee, "Colorway · camiseta y letras", { custom: false, pair: "logoColor" })],
-  logo: [optionGroup("logo", LOGOS, "Gráfico del pecho"), swatchGroup("logoColor", COLORS.logo, "Color del logo")],
   shorts: [swatchGroup("shorts", COLORS.shorts, "Color del short cargo")],
   shoes: [swatchGroup("shoes", COLORS.shoes, "Color de las zapatillas")],
   acc: [...SLOTS.map(([key, label, opts]) => optionGroup(key, opts, label)),
@@ -248,15 +247,6 @@ const panes = {
         swatchGroup("skiColor", COLORS.ski, "Color ski", { custom: false }),
         swatchGroup("accColor", COLORS.tee, "Color gorra", { custom: false, pair: "isoColor" })],
 };
-const up = document.createElement("label"); up.className = "upload"; up.htmlFor = "logo-file";
-up.innerHTML = `Sube tu logo (PNG con fondo transparente) <input type="file" id="logo-file" accept="image/png,image/svg+xml,image/webp">`;
-up.querySelector("input").addEventListener("change", e => {
-  const f = e.target.files[0]; if (!f) return;
-  const r = new FileReader();
-  r.onload = () => { const img = new Image(); img.onload = () => { uploadedImage = img; uploadVersion++; set("logo", "upload"); }; img.src = r.result; };
-  r.readAsDataURL(f);
-});
-panes.logo.splice(1, 0, up);
 
 TABS.forEach(([id, label], i) => {
   const t = document.createElement("button"); t.type = "button"; t.className = "tab"; t.role = "tab"; t.id = "tab-" + id;
@@ -276,12 +266,10 @@ function syncUI() {
   document.querySelectorAll(".opt").forEach(b => b.setAttribute("aria-pressed", state[b.dataset.key] === b.dataset.val));
   document.querySelectorAll("code[data-hex]").forEach(c => c.textContent = state[c.dataset.hex].toUpperCase());
   for (const k of ["tee","shorts","shoes","logoColor"]) { const i = document.getElementById("custom-" + k); if (i) i.value = state[k]; }
-  const logoName = LOGOS.find(l => l[0] === state.logo)[1];
   const worn = SLOTS.filter(([k]) => state[k] !== "none").map(([k, , opts]) => (o => o[3] ?? o[1])(opts.find(o => o[0] === state[k])));
   syncProduct();
   document.getElementById("spec").innerHTML = `
     <dt>Camiseta</dt><dd>${nameOf(COLORS.tee, state.tee)}</dd>
-    <dt>Logo</dt><dd>${state.logo === "none" ? "Sin logo" : logoName + " · " + nameOf(COLORS.logo, state.logoColor)}</dd>
     <dt>Short</dt><dd>${nameOf(COLORS.shorts, state.shorts)}</dd>
     <dt>Zapatillas</dt><dd>${nameOf(COLORS.shoes, state.shoes)}</dd>
     <dt>Accesorios</dt><dd>${worn.length ? worn.join(", ") : "Nada"}</dd>`;
@@ -530,8 +518,6 @@ function updateDecal() {
   if (state.logo === "wordmark") {
     if (art.wordmark) addPrint(art.wordmark, state.logoColor, 7, 1, 7.1, 2.2);   // front: a touch narrower so the ends stay readable on the sleeves
     if (art.back) addPrint(art.back, state.logoColor, 11, -1, 6.1, 2.2);         // back: narrower so the first and last letters stay on the flat of the back
-  } else if (state.logo === "upload" && uploadedImage) {
-    addPrint(uploadedImage, null, 0, 1, 4.6, 1.8);
   }
 }
 
