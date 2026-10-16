@@ -194,11 +194,7 @@ export function createSignage(mats, registry, shell, stations) {
     });
   }
 
-  // "bandidaje fino 24" in paint marker across the front of the bench base.
-  var baseH = CAR.seat.height - 0.04;
-  loadTag('/metro/images/web/vb/tag-bench.png', 1218 / 196, 1.7, function (mesh, w, h) {
-    mesh.position.set(CAR.seat.x0 + 0.1 + w / 2, baseH / 2 + 0.01, CAR.seat.depth - 0.05 + 0.002);
-  });
+  // The bench base stays bare until the "bandidaje fino 24" tag artwork arrives.
 
   function update(state) {
     var station = state.station || stations[state.stationIndex];

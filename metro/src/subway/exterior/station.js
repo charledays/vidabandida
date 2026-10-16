@@ -188,15 +188,11 @@ function wallFootTexture(registry) {
 
 function bandTexture(registry) {
   var c = textCanvas(256, 64, function (ctx, w, h) {
-    ctx.fillStyle = '#141414';
+    // VIDABANDIDA line stripe: yellow with a dark brown band through the middle (a fifth of its height).
+    ctx.fillStyle = '#fbe54d';
     ctx.fillRect(0, 0, w, h);
-    ctx.fillStyle = '#D63B0C';
-    ctx.fillRect(0, 8, w, 6);
-    ctx.fillRect(0, h - 14, w, 6);
-    for (var x = 0; x < w; x += 32) {
-      ctx.fillStyle = '#3a3a3c';
-      ctx.fillRect(x + 10, 22, 12, 20);
-    }
+    ctx.fillStyle = '#2b1005';
+    ctx.fillRect(0, h * 0.4, w, h * 0.2);
   });
   var tex = canvasTexture(c, registry);
   tex.wrapS = THREE.RepeatWrapping;
@@ -426,14 +422,12 @@ function visitTabTexture(registry, w, h) {
  * station's resolved takeover (content.js), or null for a plain station.
  */
 /**
- * Paint-marker tags on the tiles: VDBA and "bandidaje fino", scattered along the wall either side of
+ * Paint-marker VDBA tags on the tiles, scattered along the wall either side of
  * the poster, at hand height (under the name tablets). Seeded per station, so they stay put.
  */
 var TAGS = [
   { src: '/metro/images/web/vb/tag-vdba-white.png', aspect: 576 / 316, h: 0.42 },
   { src: '/metro/images/web/vb/tag-vdba-accent.png', aspect: 520 / 292, h: 0.36 },
-  { src: '/metro/images/web/vb/tag-bf-white.png', aspect: 735 / 292, h: 0.4 },
-  { src: '/metro/images/web/vb/tag-bf-cream.png', aspect: 854 / 172, h: 0.2 },
   { src: '/metro/images/web/vb/tag-vdba-silver.png', aspect: 436 / 205, h: 0.3 }
 ];
 var tagMats = {};
@@ -526,7 +520,8 @@ export function buildStation(data, mats, registry, loader, gap, content, options
   if (!content) {
     var bandTex = bandTexture(registry);
     bandTex.repeat.set(len / 1.4, 1);
-    var bandMat = track(new THREE.MeshStandardMaterial({ map: bandTex, roughness: 0.5 }));
+    // A touch of its own glow so the yellow reads up under the ceiling, out of the light pools.
+    var bandMat = track(new THREE.MeshStandardMaterial({ map: bandTex, roughness: 0.5, emissive: 0xffffff, emissiveMap: bandTex, emissiveIntensity: 0.16 }));
     var band = new THREE.Mesh(keep(new THREE.PlaneGeometry(len, 0.3)), bandMat);
     band.position.set(0, 3.05, S.wallZ + 0.01);
     group.add(band);
