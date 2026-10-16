@@ -67,7 +67,7 @@ function mapTexture(registry) {
     ctx.font = '700 30px ' + SIGN_FONT;
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
-    ctx.fillText('Charle$Days Universe — Route Map', 80, 38);
+    ctx.fillText('VIDABANDIDA Universe — Route Map', 80, 38);
     // Wear.
     for (var n = 0; n < 1400; n++) {
       ctx.fillStyle = 'rgba(40,30,20,' + (rand() * 0.08).toFixed(3) + ')';
@@ -138,7 +138,7 @@ export function createSignage(mats, registry, shell, stations) {
   // Helvetica centred, no line bullet (it's a motto, not a stop). Between window frame and grab rail,
   // centred over the first three seats.
   // The sign is cut to the lettering plus a little padding each side.
-  var MOTTO = 'Hecho Con Criterio';
+  var MOTTO = 'Bandidaje Fino';
   var mottoH = 0.11, mottoPx = 176, mottoFont = '700 ' + mottoPx * 0.52 + 'px ' + SIGN_FONT;
   var measure = document.createElement('canvas').getContext('2d');
   measure.font = mottoFont;
@@ -194,10 +194,10 @@ export function createSignage(mats, registry, shell, stations) {
     });
   }
 
-  // The 601 throwie, sprayed floor to seat across the front of the bench base.
+  // The VIDABANDIDA wordmark, sprayed across the front of the bench base.
   var baseH = CAR.seat.height - 0.04;
-  loadTag('/metro/images/brand/601-throwie.png', 1475 / 783, baseH * 1475 / 783, function (mesh, w, h) {
-    mesh.position.set(CAR.seat.x0 + 0.01 + w / 2, h / 2, CAR.seat.depth - 0.05 + 0.002);
+  loadTag('/og-bandit/vb-wordmark.png', 1839 / 347, baseH * 0.62 * 1839 / 347, function (mesh, w, h) {
+    mesh.position.set(CAR.seat.x0 + 0.08 + w / 2, h / 2 + 0.07, CAR.seat.depth - 0.05 + 0.002);
   });
 
   function update(state) {

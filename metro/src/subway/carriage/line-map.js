@@ -98,7 +98,7 @@ export function createLineMap(mats, registry, stops) {
     ctx.fillText('Tap a stop to ride there', w * 0.06, h * 0.945);
     ctx.fillStyle = '#6d6a64';
     ctx.font = '500 ' + h * 0.014 + 'px ' + FONT;
-    ctx.fillText('Charle$Days Transit · charlesdays.art', w * 0.06, h * 0.968);
+    ctx.fillText('VIDABANDIDA Transit · vidabandida.art', w * 0.06, h * 0.968);
 
     // Wear: faded edges and grime, it has been behind this acrylic for years.
     var rand = rng(211);

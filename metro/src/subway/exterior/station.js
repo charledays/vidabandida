@@ -634,6 +634,8 @@ export function buildStation(data, mats, registry, loader, gap, content, options
   // A wallpaper takeover is the art itself: no lightbox. The board stays as the (unseen) spot
   // GET OFF pushes toward.
   if (content && content.wall === 'wallpaper') board.visible = false;
+  // No artwork for this stop: no empty lightbox either.
+  if (!content && !(data.billboard && data.billboard.src)) board.visible = false;
 
   /**
    * The visit sign: a lightbox on the wall straight ahead of where you stand when you step out

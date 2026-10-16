@@ -13,7 +13,7 @@
  */
 import * as THREE from 'three';
 import { CAR, WORLD, LEG, CRUISE_SPEED, START, START_CLOSED, DOOR_WALK } from './config.js';
-import { stations, mapStops, adArt, easterEgg, aragua } from './stations.js';
+import { stations, mapStops, adArt } from './stations.js';
 import { createTimeline } from './timeline.js';
 import { createScroll } from './scroll.js';
 import { createJourney } from './journey.js';
@@ -119,7 +119,7 @@ function start() {
   var adStrip = createAdStrip(mats, registry, shell, adArt);
   // The eye of Charles, as an ad card on the steel panel under the line map. Click it: see below.
   var eyeAd = createPanelAd(registry, {
-    src: '/metro/images/wall/eye-tag.jpg', width: 0.5, height: 0.46, seed: 112,
+    src: '/metro/images/web/vb/isotipo-accent.webp', width: 0.5, height: 0.46, seed: 112,
     position: [CAR.doorCenterX + CAR.doorWidth / 2 + (CAR.doorTravel + 0.05) / 2, 0.33, 0.018]
   });
   scene.add(eyeAd.group);
@@ -137,7 +137,7 @@ function start() {
   stationViews.forEach(function (v) { scene.add(v.group); });
   // Secret stops stand in for a real one while a secret ride is on (see tick).
   var secretViews = {};
-  [easterEgg, aragua].forEach(function (s) {
+  [].forEach(function (s) {
     var v = buildStation(s, mats, registry, loader, timeline.gap, stationContent(s), { coarse: !finePointer });
     v.group.visible = false;
     scene.add(v.group);
@@ -195,10 +195,7 @@ function start() {
   var detachEye = (function () {
     var ray = new THREE.Raycaster();
     var ndc = new THREE.Vector2();
-    var doors = [
-      { stop: easterEgg, mesh: eyeAd.print, hits: function () { return true; } },
-      { stop: aragua, mesh: signage.motto.mesh, hits: function (hit) { return signage.motto.onCriterio(hit.uv); } }
-    ];
+    var doors = [];                                                    // no secret stops on this line (yet)
     function over(e) {
       var rect = canvas.getBoundingClientRect();
       ndc.set(((e.clientX - rect.left) / rect.width) * 2 - 1, -((e.clientY - rect.top) / rect.height) * 2 + 1);

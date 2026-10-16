@@ -88,8 +88,8 @@ export var TRAVEL = {
 /** Stepping out: the walk from the seat through the doors onto the platform (and back), seconds. */
 export var DOOR_WALK = 1.6;
 
-/** The Charle$Days tag (white on transparent), cropped to its lettering. Used on the doors and the line map. */
-export var WORDMARK = { src: '/metro/images/brand/charlesdays-wordmark.png', crop: [86, 258, 2138, 1181], size: [2262, 1696] };
+/** The VIDABANDIDA wordmark (white on transparent), cropped to its lettering. Used on the doors and the line map. */
+export var WORDMARK = { src: '/og-bandit/vb-wordmark.png', crop: [8, 11, 1830, 337], size: [1839, 347] };
 
 export var PALETTE = {
   steel: 0xb9bcbf,

@@ -238,16 +238,20 @@ export function createBandits(options) {
   group.name = 'og-bandits';
   scene.add(group);
 
-  /** Seated: thighs swung forward to the seat's edge, the shoes hanging straight down again. */
-  var sitDelta = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -Math.PI / 2);
+  /**
+   * Seated like a toy on a shelf: the legs swung straight out in front, soles toward you. The leg is one
+   * piece below the thigh joint (the foot bone carries the shin and the shoe), so the foot keeps its pose
+   * relative to the thigh and the whole leg points forward.
+   */
+  var sitDelta = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -Math.PI / 2 + 0.12);
+  var splay = { L: new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), 0.16),
+    R: new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), -0.16) };
   function sit(fig) {
     ['L', 'R'].forEach(function (s) {
       var thigh = fig.bones['thigh' + s], foot = fig.bones['foot' + s];
       if (!thigh || !foot) return;
-      var rest = fig.rest['thigh' + s];
-      thigh.quaternion.copy(sitDelta).multiply(rest);
-      // foot = rest⁻¹ · delta⁻¹ · rest · footRest: the shoe keeps its standing orientation
-      foot.quaternion.copy(rest).invert().multiply(sitDelta.clone().invert()).multiply(rest).multiply(fig.rest['foot' + s]);
+      thigh.quaternion.copy(splay[s]).multiply(sitDelta).multiply(fig.rest['thigh' + s]);
+      foot.quaternion.copy(fig.rest['foot' + s]);
     });
   }
 
@@ -315,7 +319,7 @@ export function createBandits(options) {
         var s = CAR.seat;
         var x = s.x0 + (c.seat + 0.5) * s.width;
         // Hips (model y ≈ 2.4) on the seat pan, back against the seat back.
-        root.position.set(x, s.height + 0.06 - 2.25 * SCALE, 0.2);
+        root.position.set(x, s.height + 0.05 - 2.4 * SCALE, 0.16);
         sit(fig);
         group.add(root);
       } else {

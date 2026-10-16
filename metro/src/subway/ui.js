@@ -66,8 +66,8 @@ export function createUI(root, stations, links, handlers) {
    * hint, once used, stays gone next time too, and the tips chip turns them all off (or back on,
    * from the start). Storage can be missing or throw (private windows); then it's per visit.
    */
-  var TIPS_KEY = 'charlesdays.subway.tips';
-  var SEEN_KEY = 'charlesdays.subway.seenHints';
+  var TIPS_KEY = 'vidabandida.metro.tips';
+  var SEEN_KEY = 'vidabandida.metro.seenHints';
   function load(key) { try { return window.localStorage.getItem(key); } catch (e) { return null; } }
   function save(key, value) {
     try {
