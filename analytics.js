@@ -8,7 +8,7 @@
  *                           Apps Script web app), so the list of who made one lives with VIDABANDIDA.
  */
 (function () {
-  var GA_ID = '';          // Google Analytics 4 measurement ID, e.g. 'G-XXXXXXXXXX'
+  var GA_ID = 'G-B3R38DTC9D';   // Google Analytics 4 measurement ID (vidabandida.art web stream)
   var SAVE_URL = '';       // where saved OG BANDITs are recorded (POST, JSON); empty = nowhere
 
   window.dataLayer = window.dataLayer || [];
