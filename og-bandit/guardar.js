@@ -204,25 +204,20 @@ async function compose({ aka, skills, city, look }) {
   fit(g, aka.toUpperCase(), 620, { weight: 600, size: 36, family: SANS });
   g.fillStyle = ACC; g.fillText(aka.toUpperCase(), 54, 262);
 
-  // about: a few lines of type on the wall itself, ruled like a technical sheet (no label, no card)
-  const x = 56, w = 400, rows = [
-    ["NOMBRE / A.K.A", aka.toUpperCase()],
-    ["SKILLS", skills.length ? skills.join(", ").toUpperCase() : "—"],
-    ["CIUDAD", city ? city.toUpperCase() : "—"],
-    ["CAMISETA", look.tee.toUpperCase()],
-  ];
+  // about: just the data, set close like a technical sheet, nothing labelled (the name is already above)
+  const x = 56, w = 400;
+  const facts = [skills.length ? skills.join(", ") : "", city, look.tee].filter(Boolean).map(s => s.toUpperCase());
   g.font = `500 17px ${MONO}`;
-  const lines = rows.map(([k, v]) => [k, wrap(g, v, w)]);
-  const h = 44 + lines.reduce((n, [, l]) => n + 26 + l.length * 24 + 16, 0);
+  const lines = facts.flatMap((f, i) => (i ? [null] : []).concat(wrap(g, f, w)));   // null: a rule between facts
+  const h = 44 + lines.reduce((n, l) => n + (l === null ? 14 : 23), 0);
   let ty = H - 120 - h;
   g.fillStyle = CREAM; g.font = `700 22px ${SANS}`; g.fillText("ABOUT", x, ty);
   g.fillStyle = "rgba(239,234,224,0.35)"; g.fillRect(x, ty + 14, w, 1);
   ty += 44;
-  for (const [k, l] of lines) {
-    g.fillStyle = "rgba(239,234,224,0.5)"; g.font = `500 13px ${MONO}`; g.fillText(k, x, ty);
-    g.fillStyle = CREAM; g.font = `500 17px ${MONO}`;
-    l.forEach((s, i) => g.fillText(s, x, ty + 24 + i * 24));
-    ty += 26 + l.length * 24 + 16;
+  g.font = `500 17px ${MONO}`;
+  for (const l of lines) {
+    if (l === null) { g.fillStyle = "rgba(239,234,224,0.16)"; g.fillRect(x, ty - 12, w, 1); ty += 14; continue; }
+    g.fillStyle = CREAM; g.fillText(l, x, ty); ty += 23;
   }
   g.fillStyle = "rgba(239,234,224,0.35)"; g.fillRect(x, ty - 8, w, 1);
 
