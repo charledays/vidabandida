@@ -196,12 +196,15 @@ function start() {
   /** How close to the wall the walk gets before turning (the poster hangs at wallZ). */
   var EXIT_LANE = WORLD.station.wallZ + 2.1;
   var exit = null;
+  var BACK_KEY = 'vidabandida.metro.back';
   function startExit() {
     if (exit || !doorway.ready()) return false;
     var stop = lastState && stations[lastState.stationIndex];
     if (!stop || !stop.href) return false;
     exit = { t0: performance.now(), href: stop.href, gone: false };
     setBusy('exit');
+    // Coming back (the browser's back button) lands you in your seat at this same stop, doors open.
+    try { sessionStorage.setItem(BACK_KEY, String(lastState.stationIndex)); } catch (e) { /* private mode */ }
     return true;
   }
   /** Where the walk is at time t (s): door walk 0..1, lane 0..1, head yaw (right is negative), metres along, dip. */
@@ -225,6 +228,8 @@ function start() {
     if (!e.persisted || !exit) return;
     exit = null;
     setBusy(null);
+    rig.setLane(0, 0);
+    try { sessionStorage.removeItem(BACK_KEY); } catch (err) { /* private mode */ }
   });
   /**
    * Secret doors: the eye of Charles (to Easter Egg) and the word "Criterio" on the motto sign
@@ -771,8 +776,15 @@ function start() {
     // Left and right: the drag itself turns the head (detachLook), as on a desktop.
   }
 
+  // Back from a section page: seated at the stop you got off at, doors open (see startExit).
+  var backAt = null;
+  try {
+    var back = sessionStorage.getItem(BACK_KEY);
+    sessionStorage.removeItem(BACK_KEY);
+    if (back != null && /^\d+$/.test(back) && +back < stations.length) backAt = +back;
+  } catch (e) { /* private mode */ }
   var scroll = createScroll({
-    start: START_CLOSED,
+    start: backAt != null ? backAt + START : START_CLOSED,
     // One step, one station, round the loop either way.
     onStep: rideStep,
     onSwipe: phone ? onSwipe : null,

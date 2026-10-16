@@ -91,7 +91,7 @@ export var DOOR_WALK = 1.6;
 /** The VIDABANDIDA logo (white on transparent), cropped to its lettering. Used on the line map and the station tablets. */
 export var WORDMARK = { src: '/metro/images/web/vb/logo-block.png', crop: [0, 0, 1587, 276], size: [1587, 276] };
 /** The VIDABANDIDA isotype (white on transparent), painted across the door leaves. */
-export var DOOR_TAG = { src: '/og-bandit/vb-isotipo.png', crop: [0, 0, 619, 989], size: [619, 989] };
+export var DOOR_TAG = null;                                              // was the isotype; the doors go bare for now
 
 export var PALETTE = {
   steel: 0xb9bcbf,

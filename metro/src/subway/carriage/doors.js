@@ -16,29 +16,32 @@ export function createDoors(mats, registry) {
   // The VIDABANDIDA isotype painted across both leaves below the windows. Each leaf carries its
   // half, so it splits down the seam as the doors open.
   var TAG = DOOR_TAG;
-  var tagW = CAR.doorWidth * 0.3;
-  var tagH = tagW * (TAG.crop[3] - TAG.crop[1]) / (TAG.crop[2] - TAG.crop[0]);
-  function tagHalf(u0) {
-    var geo = keep(new THREE.PlaneGeometry(tagW / 2, tagH));
-    var uv = geo.attributes.uv;
-    for (var i = 0; i < uv.count; i++) uv.setX(i, u0 + uv.getX(i) * 0.5);
-    return geo;
+  var tagW = 0, tagHalves = null, tagMat = null;
+  if (TAG) {
+    tagW = CAR.doorWidth * 0.3;
+    var tagH = tagW * (TAG.crop[3] - TAG.crop[1]) / (TAG.crop[2] - TAG.crop[0]);
+    function tagHalf(u0) {
+      var geo = keep(new THREE.PlaneGeometry(tagW / 2, tagH));
+      var uv = geo.attributes.uv;
+      for (var i = 0; i < uv.count; i++) uv.setX(i, u0 + uv.getX(i) * 0.5);
+      return geo;
+    }
+    tagHalves = { '-1': tagHalf(0), '1': tagHalf(0.5) };
+    tagMat = new THREE.MeshStandardMaterial({
+      color: 0xf4f1ea, emissive: 0x2a2826, transparent: true, alphaTest: 0.35, roughness: 0.55, opacity: 0
+    });
+    registry.materials.push(tagMat);
+    new THREE.TextureLoader().load(TAG.src, function (tex) {
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.anisotropy = 8;
+      tex.repeat.set((TAG.crop[2] - TAG.crop[0]) / TAG.size[0], (TAG.crop[3] - TAG.crop[1]) / TAG.size[1]);
+      tex.offset.set(TAG.crop[0] / TAG.size[0], 1 - TAG.crop[3] / TAG.size[1]);
+      registry.textures.push(tex);
+      tagMat.map = tex;
+      tagMat.opacity = 0.92;
+      tagMat.needsUpdate = true;
+    });
   }
-  var tagHalves = { '-1': tagHalf(0), '1': tagHalf(0.5) };
-  var tagMat = new THREE.MeshStandardMaterial({
-    color: 0xf4f1ea, emissive: 0x2a2826, transparent: true, alphaTest: 0.35, roughness: 0.55, opacity: 0
-  });
-  registry.materials.push(tagMat);
-  new THREE.TextureLoader().load(TAG.src, function (tex) {
-    tex.colorSpace = THREE.SRGBColorSpace;
-    tex.anisotropy = 8;
-    tex.repeat.set((TAG.crop[2] - TAG.crop[0]) / TAG.size[0], (TAG.crop[3] - TAG.crop[1]) / TAG.size[1]);
-    tex.offset.set(TAG.crop[0] / TAG.size[0], 1 - TAG.crop[3] / TAG.size[1]);
-    registry.textures.push(tex);
-    tagMat.map = tex;
-    tagMat.opacity = 0.92;
-    tagMat.needsUpdate = true;
-  });
 
   var h = CAR.doorHeight;
   var win = CAR.doorWindow;
@@ -87,10 +90,13 @@ export function createDoors(mats, registry) {
     kick.position.set(side * 0.01, 0.1, depth + 0.004);
     leaf.add(kick);
 
-    // This leaf's half of the tag, butted against the meeting edge (painted over the rubber).
-    var tag = new THREE.Mesh(tagHalves[side], tagMat);
-    tag.position.set(-side * (leafW / 2 - tagW / 4), 0.62, depth + 0.012);
-    leaf.add(tag);
+    // This leaf's half of the tag, butted against the meeting edge (painted over the rubber). The
+    // VIDABANDIDA doors go bare for now (DOOR_TAG null).
+    if (TAG) {
+      var tag = new THREE.Mesh(tagHalves[side], tagMat);
+      tag.position.set(-side * (leafW / 2 - tagW / 4), 0.62, depth + 0.012);
+      leaf.add(tag);
+    }
     return leaf;
   }
 

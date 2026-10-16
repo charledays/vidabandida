@@ -710,6 +710,24 @@ export function buildStation(data, mats, registry, loader, gap, content, options
     }
     pgeo.computeVertexNormals();
     posterMat = track(new THREE.MeshStandardMaterial({ color: 0xd8d4cc, roughness: 0.92, alphaTest: 0.5, side: THREE.DoubleSide }));
+    // Wheatpaste: thin paper pressed into the tiles, so the joints and the brick edges read through it.
+    // wallUV (per vertex, set in setViewpoint once the poster is placed) is the wall's own tile space.
+    posterMat.onBeforeCompile = function (sh) {
+      sh.vertexShader = sh.vertexShader
+        .replace('#include <common>', '#include <common>\nattribute vec2 wallUV;\nvarying vec2 vWallUV;')
+        .replace('#include <begin_vertex>', '#include <begin_vertex>\nvWallUV = wallUV;');
+      sh.fragmentShader = sh.fragmentShader
+        .replace('#include <common>', '#include <common>\nvarying vec2 vWallUV;')
+        .replace('#include <map_fragment>', '#include <map_fragment>\n' +
+          // tiles 1/8 x 1/16 of a 1.22 m repeat, every other row offset by half (as tileTexture in materials.js)
+          'vec2 bq = vec2(vWallUV.x * 8.0, vWallUV.y * 16.0);\n' +
+          'bq.x += (1.0 - mod(floor(bq.y), 2.0)) * 0.5;\n' +   // the canvas offsets its odd rows, counted from the top
+          'vec2 bf = fract(bq);\n' +
+          'float gx = min(bf.x, 1.0 - bf.x) * 0.1525, gy = min(bf.y, 1.0 - bf.y) * 0.076;\n' +
+          'float joint = 1.0 - smoothstep(0.002, 0.006, min(gx, gy));\n' +
+          'float rim = (1.0 - smoothstep(0.006, 0.014, min(gx, gy))) - joint;\n' +
+          'diffuseColor.rgb *= 1.0 - 0.32 * joint + 0.06 * rim;');
+    };
     loader.load(data.poster, function (tex) {
       tex.colorSpace = THREE.SRGBColorSpace;
       tex.anisotropy = 8;
@@ -717,11 +735,24 @@ export function buildStation(data, mats, registry, loader, gap, content, options
       posterMat.map = tex;
       posterMat.needsUpdate = true;
     });
+    pgeo.setAttribute('wallUV', new THREE.Float32BufferAttribute(new Float32Array(pos.count * 2), 2));
     sign = new THREE.Group();
     sign.add(new THREE.Mesh(pgeo, posterMat));
     sign.rotation.z = (prand() - 0.5) * 0.09;
     sign.position.set(0, 1.42, S.wallZ + 0.01);
     group.add(sign);
+  }
+  /** Put the poster at x along the wall and work out where each of its points sits in the wall's tile space. */
+  function placePoster(x) {
+    sign.position.x = x;
+    sign.updateMatrix();
+    var mesh = sign.children[0], geo = mesh.geometry, p = geo.attributes.position, w = geo.attributes.wallUV;
+    var v = new THREE.Vector3();
+    for (var i = 0; i < p.count; i++) {
+      v.fromBufferAttribute(p, i).applyMatrix4(sign.matrix);
+      w.setXY(i, (v.x + len / 2) / 1.22, v.y / 1.22);
+    }
+    w.needsUpdate = true;
   }
   /** hover: pointer on the poster (it lifts off the wall a little and brightens); dt for easing. */
   function setSign(hover, dt) {
@@ -757,6 +788,8 @@ export function buildStation(data, mats, registry, loader, gap, content, options
   function setViewpoint(camX, camZ) {
     var boardX = sightAt(camX, camZ, CAR.doorCenterX, boardZ);
     board.position.x = boardX;
+    // The paste-up dead centre in the open doors too, so it's right there to click from the seat.
+    if (sign) placePoster(boardX);
     var clearHalf = B.width / 2 + 0.45;
 
     var windowX = sightAt(camX, camZ, (CAR.window.x0 + CAR.window.x1) / 2, S.wallZ);
