@@ -1,6 +1,6 @@
 /**
  * "Guardar mi OG BANDIT": a short form (A.K.A, skills, city), then a 1080 × 1350 image of the toy as it is
- * dressed right now, on a dark industrial wall, with its spec sheet ("ficha técnica"): who made it, their
+ * dressed right now, on a dark industrial wall, with a short ABOUT: who made it, their
  * skills, the colorway and every piece it wears. Download it or share it straight from the phone.
  *
  * The photo is taken with the dress-up's own renderer (index.html exposes it as window.__ogb). The answers go
@@ -40,18 +40,18 @@ box.className = "ogb-save"; box.hidden = true;
 box.setAttribute("role", "dialog"); box.setAttribute("aria-modal", "true"); box.setAttribute("aria-labelledby", "ogb-save-title");
 box.innerHTML = `
 <form class="ogb-card" id="ogb-form" novalidate>
-  <h2 id="ogb-save-title">Guarda tu <q>OG BANDIT</q></h2>
-  <p>Firma tu versión. Tu nombre y tus skills van en la ficha técnica de la imagen.</p>
+  <h2 id="ogb-save-title">Guarda tu OG BANDIT</h2>
+  <p>Firma tu versión. Tu nombre y tus skills van en la imagen.</p>
   <label>Nombre o A.K.A <input name="aka" maxlength="24" autocomplete="nickname" required placeholder="Ej. Charle$Days"></label>
   <label>Skills (sepáralas con coma) <input name="skills" maxlength="90" placeholder="Fotografía, producción musical, tattoo"></label>
   <label>Ciudad <input name="city" maxlength="28" autocomplete="address-level2" placeholder="Lima"></label>
   <p class="err" id="ogb-err" hidden></p>
-  <div class="row"><button class="btn2" type="submit">Crear mi ficha</button><button class="btn2 ghost" type="button" data-close>Cancelar</button></div>
+  <div class="row"><button class="btn2" type="submit">Crear mi imagen</button><button class="btn2 ghost" type="button" data-close>Cancelar</button></div>
   <p class="fine">Guardamos tus skills y tu ciudad para conocer a la comunidad VIDABANDIDA.</p>
 </form>
 <div class="ogb-card" id="ogb-result" hidden>
-  <h2>Tu <q>OG BANDIT</q></h2>
-  <img id="ogb-img" alt="Tu OG BANDIT con su ficha técnica">
+  <h2>Tu OG BANDIT</h2>
+  <img id="ogb-img" alt="Tu OG BANDIT con tu nombre y tus skills">
   <div class="row"><a class="btn2" id="ogb-dl" download>Descargar</a><button class="btn2 ghost" type="button" id="ogb-share" hidden>Compartir</button></div>
   <div class="row"><button class="btn2 ghost" type="button" data-close>Seguir vistiendo</button></div>
 </div>`;
@@ -95,7 +95,7 @@ form.addEventListener("submit", async e => {
     window.vbSaveBandit?.({ aka, skills, city, look });
   } catch (x) {
     err.textContent = "No se pudo crear la imagen. Intenta otra vez."; err.hidden = false;
-  } finally { btn.disabled = false; btn.textContent = "Crear mi ficha"; }
+  } finally { btn.disabled = false; btn.textContent = "Crear mi imagen"; }
 });
 box.querySelector("#ogb-dl").addEventListener("click", () => window.vbTrack?.("og_bandit_download"));
 box.querySelector("#ogb-share").addEventListener("click", async () => {
@@ -168,11 +168,6 @@ function industrial(g) {
   vig.addColorStop(0, "rgba(0,0,0,0)"); vig.addColorStop(1, "rgba(0,0,0,0.78)");
   g.fillStyle = vig; g.fillRect(0, 0, W, H);
 }
-function stripes(g, x, y, w, h, color) {
-  g.save(); g.beginPath(); g.rect(x, y, w, h); g.clip(); g.fillStyle = color;
-  for (let i = -h; i < w + h; i += 28) { g.beginPath(); g.moveTo(x + i, y + h); g.lineTo(x + i + 14, y + h); g.lineTo(x + i + 14 + h, y); g.lineTo(x + i + h, y); g.fill(); }
-  g.restore();
-}
 function fit(g, text, max, font) { let s = font.size; g.font = `${font.weight} ${s}px ${font.family}`; while (g.measureText(text).width > max && s > 10) { s -= 1; g.font = `${font.weight} ${s}px ${font.family}`; } return s; }
 function wrap(g, text, max) {
   const words = text.split(" "), lines = []; let line = "";
@@ -198,54 +193,42 @@ async function compose({ aka, skills, city, look }) {
   // the toy fills about 58 % of the photo's height, centred in it: drop it so its soles land on FEET
   g.drawImage(toy, TX - 450, FEET - 562 - 330, 900, 1125);
 
-  // header: the logo, and the quoted title
+  // header: the logo, the title, and whose it is
   const no = String(Math.floor(Date.now() / 1000) % 100000).padStart(5, "0");
   if (logo) { const lw = 300, lh = lw * logo.naturalHeight / logo.naturalWidth; g.globalAlpha = 0.95; g.drawImage(logo, 56, 58, lw, lh); g.globalAlpha = 1; }
-  g.fillStyle = CREAM; g.textBaseline = "alphabetic";
-  g.font = `500 18px ${MONO}`; g.textAlign = "right";
-  g.fillText(`"ART TOY"`, W - 56, 76); g.fillText(`Nº ${no}`, W - 56, 100);
-  g.textAlign = "left";
-  g.font = `700 92px ${SANS}`; g.fillText(`"OG BANDIT"`, 50, 214);
-  fit(g, `c/o ${aka.toUpperCase()}`, 600, { weight: 600, size: 34, family: SANS });
-  g.fillStyle = ACC; g.fillText(`c/o ${aka.toUpperCase()}`, 56, 258);
+  g.fillStyle = "rgba(239,234,224,0.6)"; g.textBaseline = "alphabetic";
+  g.font = `500 17px ${MONO}`; g.textAlign = "right";
+  g.fillText(`Nº ${no}`, W - 56, 82);
+  g.textAlign = "left"; g.fillStyle = CREAM;
+  g.font = `700 92px ${SANS}`; g.fillText("OG BANDIT", 50, 214);
+  fit(g, aka.toUpperCase(), 620, { weight: 600, size: 36, family: SANS });
+  g.fillStyle = ACC; g.fillText(aka.toUpperCase(), 54, 262);
 
-  // the spec sheet: a cream care-label card, bottom left, a zip tie in the accent colour
-  const x = 56, w = 560, rows = [
-    ["DISEÑADO POR", aka.toUpperCase()],
-    ["SKILLS", skills.length ? skills.join(" · ").toUpperCase() : "—"],
+  // about: a few lines of type on the wall itself, ruled like a technical sheet (no label, no card)
+  const x = 56, w = 400, rows = [
+    ["NOMBRE / A.K.A", aka.toUpperCase()],
+    ["SKILLS", skills.length ? skills.join(", ").toUpperCase() : "—"],
     ["CIUDAD", city ? city.toUpperCase() : "—"],
     ["CAMISETA", look.tee.toUpperCase()],
-    ["SHORT / ZAPATILLAS", `${look.shorts} / ${look.shoes}`.toUpperCase()],
-    ["ACCESORIOS", look.accessories.length ? look.accessories.join(", ").toUpperCase() : "NINGUNO"],
   ];
   g.font = `500 17px ${MONO}`;
-  const lines = rows.map(([k, v]) => [k, wrap(g, v, w - 240)]);
-  const h = 92 + lines.reduce((n, [, l]) => n + l.length * 24 + 10, 0) + 78;
-  const y = H - 92 - h;
-  g.save(); g.shadowColor = "rgba(0,0,0,0.55)"; g.shadowBlur = 30; g.shadowOffsetY = 10;
-  g.fillStyle = CREAM; g.fillRect(x, y, w, h); g.restore();
-  g.fillStyle = INK; g.fillRect(x, y, w, 56);
-  g.fillStyle = CREAM; g.font = `700 24px ${SANS}`; g.fillText(`"FICHA TÉCNICA"`, x + 22, y + 37);
-  g.font = `500 15px ${MONO}`; g.textAlign = "right"; g.fillText("OG BANDIT / VDBA", x + w - 22, y + 35); g.textAlign = "left";
-  let ty = y + 92;
+  const lines = rows.map(([k, v]) => [k, wrap(g, v, w)]);
+  const h = 44 + lines.reduce((n, [, l]) => n + 26 + l.length * 24 + 16, 0);
+  let ty = H - 120 - h;
+  g.fillStyle = CREAM; g.font = `700 22px ${SANS}`; g.fillText("ABOUT", x, ty);
+  g.fillStyle = "rgba(239,234,224,0.35)"; g.fillRect(x, ty + 14, w, 1);
+  ty += 44;
   for (const [k, l] of lines) {
-    g.fillStyle = "#6c675d"; g.font = `500 14px ${MONO}`; g.fillText(k, x + 22, ty);
-    g.fillStyle = INK; g.font = `500 17px ${MONO}`;
-    l.forEach((s, i) => g.fillText(s, x + 230, ty + i * 24));
-    ty += l.length * 24 + 10;
-    g.fillStyle = "rgba(0,0,0,0.12)"; g.fillRect(x + 22, ty - 18, w - 44, 1);
+    g.fillStyle = "rgba(239,234,224,0.5)"; g.font = `500 13px ${MONO}`; g.fillText(k, x, ty);
+    g.fillStyle = CREAM; g.font = `500 17px ${MONO}`;
+    l.forEach((s, i) => g.fillText(s, x, ty + 24 + i * 24));
+    ty += 26 + l.length * 24 + 16;
   }
-  // barcode and the line under it
-  const by = y + h - 64, r = rng(aka.length * 991 + Number(no));
-  g.fillStyle = INK; for (let bx = x + 22; bx < x + 300;) { const bw = 1 + (r() * 4 | 0); g.fillRect(bx, by, bw, 38); bx += bw + 1 + (r() * 3 | 0); }
-  g.font = `500 13px ${MONO}`; g.fillText(`VIDABANDIDA.ART · ${new Date().toLocaleDateString("es-PE")}`, x + 320, by + 16);
-  g.fillText("MADE IN LIMA, PERÚ", x + 320, by + 36);
-  // zip tie
-  g.save(); g.translate(x + 36, y - 6); g.rotate(-0.45); g.fillStyle = ACC; g.fillRect(-6, -60, 12, 120); g.fillStyle = "rgba(0,0,0,0.25)"; for (let i = -56; i < 60; i += 8) g.fillRect(-6, i, 12, 2); g.restore();
+  g.fillStyle = "rgba(239,234,224,0.35)"; g.fillRect(x, ty - 8, w, 1);
 
-  // the hazard stripe along the bottom edge
-  stripes(g, 0, H - 26, W, 26, "rgba(239,234,224,0.16)");
-  g.fillStyle = "rgba(239,234,224,0.55)"; g.font = `500 14px ${MONO}`; g.textAlign = "right";
-  g.fillText(`"PERSONALIZA EL TUYO" — VIDABANDIDA.ART/OG-BANDIT`, W - 56, H - 44); g.textAlign = "left";
+  // footer
+  g.fillStyle = "rgba(239,234,224,0.5)"; g.font = `500 14px ${MONO}`;
+  g.fillText(`VIDABANDIDA.ART/OG-BANDIT · ${new Date().toLocaleDateString("es-PE")}`, x, H - 56);
+  g.textAlign = "right"; g.fillText("LIMA, PERÚ", W - 56, H - 56); g.textAlign = "left";
   return c;
 }
