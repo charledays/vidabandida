@@ -422,17 +422,14 @@ function visitTabTexture(registry, w, h) {
  * station's resolved takeover (content.js), or null for a plain station.
  */
 /**
- * Paint-marker VDBA tags on the tiles, scattered along the wall either side of
+ * Tags on the tiles (PNG artwork listed in TAGS), scattered along the wall either side of
  * the poster, at hand height (under the name tablets). Seeded per station, so they stay put.
  */
-var TAGS = [
-  { src: '/metro/images/web/vb/tag-vdba-white.png', aspect: 576 / 316, h: 0.42 },
-  { src: '/metro/images/web/vb/tag-vdba-accent.png', aspect: 520 / 292, h: 0.36 },
-  { src: '/metro/images/web/vb/tag-vdba-silver.png', aspect: 436 / 205, h: 0.3 }
-];
+var TAGS = [];                                                           // the tag artwork (PNGs) comes later
 var tagMats = {};
 function wallTags(data, loader, keep, track) {
   var group = new THREE.Group();
+  if (!TAGS.length) return group;
   var rand = rng(data.id.charCodeAt(0) * 97 + data.id.length * 13);
   var x = -18 + rand() * 2;
   while (x < 18) {

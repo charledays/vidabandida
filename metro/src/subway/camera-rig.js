@@ -51,6 +51,9 @@ export function createCameraRig(camera, options) {
   var inspect = 0;
   var inspectAt = new THREE.Vector3();
   function setSpot(x) { spot = x; }
+  /** Walking off (main.js): drift into the lane at depth z, by f (0..1), clear of the column line. */
+  var laneZ = 0, lane = 0;
+  function setLane(z, f) { laneZ = z; lane = f; }
   function setInspect(point, f) { if (point) inspectAt.copy(point); inspect = f; }
 
   function setDoor(f) { door = f; }
@@ -134,6 +137,11 @@ export function createCameraRig(camera, options) {
       turned.set(-Math.sin(yaw) * dist, doorLook.y - doorPos.y, -Math.cos(yaw) * dist).add(doorPos);
       fromLook.lerp(turned, d);
     }
+    if (lane > 0) {
+      var dz = (laneZ - from.z) * lane;
+      from.z += dz;
+      fromLook.z += dz;
+    }
     // Along the platform (phone viewpoints), then up close to the art.
     from.x += spot * d;
     fromLook.x += spot * d;
@@ -169,5 +177,5 @@ export function createCameraRig(camera, options) {
     camera.lookAt(look);
   }
 
-  return { frame: frame, update: update, setDoor: setDoor, setLook: setLook, setSeatLook: setSeatLook, setSpot: setSpot, setInspect: setInspect };
+  return { frame: frame, update: update, setDoor: setDoor, setLook: setLook, setSeatLook: setSeatLook, setSpot: setSpot, setInspect: setInspect, setLane: setLane };
 }

@@ -185,6 +185,44 @@ function start() {
     scroll.lock(!!v);
     ui.setBusy(!!v);
   }
+
+  /**
+   * Getting off: one continuous first-person move, 2.5 s at most. Up from the seat and out through the
+   * doors, a turn to the right along the platform without stopping, and on down it; the view dips to black
+   * and the stop's page opens. There's no stepping back in. Seconds from the start of the move.
+   */
+  var EXIT = { door: 1.05, turn0: 0.6, turn1: 1.45, walk0: 0.8, pace: 1.9, dip0: 2.05, total: 2.5 };
+  var exit = null;
+  function startExit() {
+    if (exit || !doorway.ready()) return false;
+    var stop = lastState && stations[lastState.stationIndex];
+    if (!stop || !stop.href) return false;
+    exit = { t0: performance.now(), href: stop.href, gone: false };
+    setBusy('exit');
+    return true;
+  }
+  /** Where the move is at time t (s): door walk 0..1, head yaw (right is negative), metres along, dip. */
+  function exitPose(t) {
+    if (reduceMotion) return { door: 0, yaw: 0, along: 0, lane: 0, dip: Math.min(1, t / 0.4) };
+    var s = function (x) { x = Math.max(0, Math.min(1, x)); return x * x * (3 - 2 * x); };
+    // Walking speed builds in, then holds: never a stop between the doors and the platform.
+    var w = Math.max(0, t - EXIT.walk0);
+    var along = EXIT.pace * (w < 0.5 ? w * w : w - 0.25);
+    return {
+      door: Math.min(1, t / EXIT.door),
+      yaw: -Math.PI / 2 * s((t - EXIT.turn0) / (EXIT.turn1 - EXIT.turn0)),
+      along: along,
+      // Into the open middle of the platform, between its edge and the columns, as the turn comes round.
+      lane: s((t - 0.7) / 0.9),
+      dip: s((t - EXIT.dip0) / (EXIT.total - EXIT.dip0))
+    };
+  }
+  // Back from the section page (the browser's back button restores this page as it was): sit down again.
+  window.addEventListener('pageshow', function (e) {
+    if (!e.persisted || !exit) return;
+    exit = null;
+    setBusy(null);
+  });
   /**
    * Secret doors: the eye of Charles (to Easter Egg) and the word "Criterio" on the motto sign
    * over the window (to Aragua). A click rides the train to the next station, which is dressed
@@ -494,7 +532,7 @@ function start() {
     function onClick(e) {
       if (overShut(e) && openDoors()) { pressed = false; return; }
       // Seen through the doorway, the visit sign takes the click.
-      if (pressed && !busy && !visit.hover && over(e)) { toDoor(true); self.set(false); }
+      if (pressed && !busy && !visit.hover && over(e)) { startExit(); self.set(false); }
       pressed = false;
     }
     // Escape: back from the art first, then onto the train.
@@ -554,7 +592,7 @@ function start() {
     function onClick(e) {
       var stop = self.live();
       var still = pressed && Math.abs(e.clientX - pressed.x) + Math.abs(e.clientY - pressed.y) < 8;
-      if (still && stop && over(e)) window.location.href = stop.href;
+      if (still && stop && over(e)) startExit();
       pressed = null;
     }
     function onLeave() { self.set(false); }
@@ -602,8 +640,8 @@ function start() {
     phone: phone,
     toggleSound: function () { return audio.setEnabled(!audio.isEnabled()); },
     ride: rideToStation,
-    stepOut: function () { if (doorway.ready()) toDoor(true); },
-    stepIn: function () { if (!busy) toDoor(false); }
+    stepOut: function () { startExit(); },
+    stepIn: function () {}
   });
 
   /**
@@ -872,6 +910,17 @@ function start() {
     walk.inspect = reduceMotion ? walk.inspectTo : Math.max(0, Math.min(1, walk.inspect + (walk.inspectTo ? 1 : -1) * dt / 1.1));
     rig.setSpot(walk.x);
     rig.setInspect(walk.at, walk.inspect);
+    if (exit) {
+      var et = (performance.now() - exit.t0) / 1000;
+      var ep = exitPose(et);
+      rig.setDoor(ep.door);
+      rig.setLook(ep.yaw);
+      rig.setSpot(ep.along);
+      rig.setLane(-1.95, ep.lane);
+      rig.setInspect(null, 0);
+      dip = Math.max(dip, ep.dip);
+      if (et >= (reduceMotion ? 0.4 : EXIT.total) && !exit.gone) { exit.gone = true; window.location.href = exit.href; }
+    }
     rig.update(state, distance, dt);
     // The tips, one per place (ui.js). Standing at the first stop with the doors still shut
     // (openDoors): on a phone first teach looking round (a drag or a turn of the phone counts),
@@ -911,7 +960,7 @@ function start() {
       stepAt.set(CAR.doorCenterX, 0.3, -0.05).project(camera);
       stepOut = { x: (stepAt.x + 1) / 2 * window.innerWidth, y: (1 - stepAt.y) / 2 * window.innerHeight };
     }
-    ui.setStep(stepOut, !!atDoor.to && atDoor.f === 1);
+    ui.setStep(exit ? null : stepOut, false);
     spray.update(dt);
     adStrip.update(camera.position.x);
     signage.update(state);
