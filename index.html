@@ -302,11 +302,11 @@ footer{border-top:1px solid var(--border);padding:2.5rem;display:grid;grid-templ
 </script>
 <style>
 /* OG BANDIT: black spinning toy while the page loads, and the way into the dress-up under the hero */
-#vb-loader{position:fixed;inset:0;z-index:9999;background:var(--ink,#181614);display:grid;place-items:center;transition:opacity .55s ease,visibility .55s}
+#vb-loader{position:fixed;inset:0;z-index:9999;background:#000;display:grid;place-items:center;transition:opacity .55s ease,visibility .55s}
 #vb-loader.out{opacity:0;visibility:hidden}
-#vb-loader canvas{width:min(70vw,420px);height:min(62svh,520px);display:block}
-#vb-loader .vb-loader-glow{position:absolute;width:min(80vw,520px);aspect-ratio:1;border-radius:50%;background:radial-gradient(closest-side,rgba(240,235,225,.10),rgba(240,235,225,0));pointer-events:none}
-#vb-loader .vb-loader-line{position:absolute;bottom:12svh;width:120px;height:1px;background:rgba(240,235,225,.14);overflow:hidden}
+#vb-loader canvas{width:min(30vw,150px);height:min(24svh,180px);display:block}
+#vb-loader .vb-loader-glow{position:absolute;width:min(46vw,240px);aspect-ratio:1;border-radius:50%;background:radial-gradient(closest-side,rgba(240,235,225,.06),rgba(240,235,225,0));pointer-events:none}
+#vb-loader .vb-loader-line{position:absolute;top:calc(50% + min(12svh,90px) + 18px);width:64px;height:1px;background:rgba(240,235,225,.14);overflow:hidden}
 #vb-loader .vb-loader-line::after{content:"";position:absolute;inset:0;width:40%;background:rgba(240,235,225,.7);animation:vbLoad 1.1s ease-in-out infinite}
 @keyframes vbLoad{0%{transform:translateX(-100%)}100%{transform:translateX(260%)}}
 @media (prefers-reduced-motion: reduce){#vb-loader .vb-loader-line::after{animation:none}}
