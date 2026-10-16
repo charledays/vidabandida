@@ -302,15 +302,18 @@ footer{border-top:1px solid var(--border);padding:2.5rem;display:grid;grid-templ
 </script>
 <style>
 /* OG BANDIT: the way into the dress-up under the hero (the black toy with a "?" for a face) */
-.og-cta{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:clamp(12px,4vw,56px);padding:clamp(28px,6vw,72px) 2.5rem;border-bottom:1px solid var(--border);color:var(--cream);text-decoration:none;cursor:crosshair}
+.og-cta{overflow:hidden;display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:clamp(12px,4vw,56px);padding:clamp(28px,6vw,72px) 2.5rem;border-bottom:1px solid var(--border);color:var(--cream);text-decoration:none;cursor:crosshair}
 .og-cta-3d{width:clamp(150px,22vw,280px);height:clamp(180px,26vw,330px);display:block}
-.og-cta-text{display:grid;gap:6px;min-width:0}
+.og-cta-text{display:grid;gap:6px;min-width:0;container-type:inline-size}
 .og-cta-text small{font-family:var(--fb);font-size:clamp(11px,1.3vw,14px);font-weight:400;letter-spacing:.22em;text-transform:uppercase;color:var(--muted)}
-.og-cta-text strong{font-family:var(--fd);font-weight:400;font-size:clamp(52px,11vw,150px);line-height:.88;letter-spacing:.01em}
-.og-cta-go{font-family:var(--fb);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--cream);border-bottom:1px solid rgba(240,235,225,.4);justify-self:start;padding-bottom:3px;margin-top:10px;transition:border-color .2s}
+/* the title is sized to its own column (never wider than it), with room under the letters for the link */
+.og-cta-text strong{display:block;font-family:var(--fd);font-weight:400;font-size:clamp(44px,9vw,150px);font-size:min(150px,15.5cqw);line-height:1;letter-spacing:.01em;white-space:nowrap;padding-bottom:.06em}
+.og-cta-go{font-family:var(--fb);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--cream);border-bottom:1px solid rgba(240,235,225,.4);justify-self:start;padding-bottom:3px;margin-top:16px;transition:border-color .2s}
 .og-cta:hover .og-cta-go,.og-cta:focus-visible .og-cta-go{border-color:var(--cream)}
 .og-cta:focus-visible{outline:1px solid var(--cream);outline-offset:-6px}
 @media (max-width:768px){.og-cta{padding:28px 1.25rem;gap:10px}}
+/* narrow screens: OG over BANDIT, big, instead of one small line */
+@media (max-width:560px){.og-cta-text strong{white-space:normal;font-size:min(64px,25cqw);line-height:.95}}
 </style>
 <!--/OGB:HEAD-->
 </head>
