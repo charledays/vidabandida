@@ -210,9 +210,10 @@ async function compose({ aka, skills, city, look }) {
   g.font = `500 17px ${MONO}`; g.textAlign = "right";
   aura(g, () => g.fillText(`Nº ${no}`, W - 56, SAFE_TOP + 24));
   g.textAlign = "left"; g.fillStyle = CREAM;
-  g.font = `700 58px ${SANS}`; aura(g, () => g.fillText("OG BANDIT", 52, SAFE_TOP + 112));
-  fit(g, aka.toUpperCase(), 560, { weight: 600, size: 26, family: SANS });
-  g.fillStyle = ACC; aura(g, () => g.fillText(aka.toUpperCase(), 55, SAFE_TOP + 148));
+  // the name is the headline; OG BANDIT sits small above it
+  g.font = `700 34px ${SANS}`; aura(g, () => g.fillText("OG BANDIT", 54, SAFE_TOP + 92));
+  fit(g, aka.toUpperCase(), 720, { weight: 700, size: 84, family: SANS });
+  g.fillStyle = ACC; aura(g, () => g.fillText(aka.toUpperCase(), 50, SAFE_TOP + 172));
 
   // about: just the data, set close like a technical sheet, nothing labelled (the name is already above)
   const x = 56, w = 400;
