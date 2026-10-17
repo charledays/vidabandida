@@ -61,14 +61,26 @@ document.body.appendChild(box);
 const form = box.querySelector("#ogb-form"), result = box.querySelector("#ogb-result"), err = box.querySelector("#ogb-err");
 let lastFocus = null, url = null, file = null;
 
+// The sheet's steps live in the browser's history too: Back from the image returns to the form, Back from
+// the form closes the sheet (the dress-up stays where it was).
+let depth = 0;
+function step(name) { history.pushState({ ...(history.state || {}), ogbSave: name }, ""); depth++; }
+addEventListener("popstate", e => {
+  const s = (e.state || {}).ogbSave;
+  depth = s === "result" ? 2 : s === "form" ? 1 : 0;
+  if (!s) { if (!box.hidden) hide(); return; }
+  box.hidden = false; form.hidden = s !== "form"; result.hidden = s !== "result";
+});
+function hide() { box.hidden = true; lastFocus?.focus?.(); }
 function open() {
   lastFocus = document.activeElement;
   form.hidden = false; result.hidden = true; err.hidden = true; box.hidden = false;
+  step("form");
   try { const saved = JSON.parse(localStorage.getItem("ogb-firma") || "{}"); for (const k of ["aka", "skills", "city"]) if (saved[k]) form.elements[k].value = saved[k]; } catch {}
   form.elements.aka.focus();
   window.vbTrack?.("og_bandit_save_open");
 }
-function close() { box.hidden = true; lastFocus?.focus?.(); }
+function close() { if (depth) history.go(-depth); else hide(); }
 box.addEventListener("click", e => { if (e.target === box || e.target.closest("[data-close]")) close(); });
 addEventListener("keydown", e => { if (e.key === "Escape" && !box.hidden) close(); });
 document.getElementById("save")?.addEventListener("click", open);
@@ -94,6 +106,7 @@ form.addEventListener("submit", async e => {
     const share = box.querySelector("#ogb-share");
     share.hidden = !(navigator.canShare && navigator.canShare({ files: [file] }));
     form.hidden = true; result.hidden = false; box.querySelector("#ogb-dl").focus();
+    step("result");
     window.vbSaveBandit?.({ aka, skills, city, look });
   } catch (x) {
     err.textContent = "No se pudo crear la imagen. Intenta otra vez."; err.hidden = false;

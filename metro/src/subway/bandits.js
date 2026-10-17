@@ -27,7 +27,7 @@ var TEES = {
   pinkPress: { fabric: '#b97d86', letters: '#e3cfb8', wash: { blotch: 0.26, dots: 110, seed: 23 } },
   spaceSteel: { fabric: '#1b262c', letters: '#9a928a', wash: { blotch: 0.5, dots: 130, seed: 37 } },
   cloudy: { fabric: '#7fb6d1', letters: '#b5d8e6', wash: { blotch: 0.28, dots: 120, seed: 41 } },
-  blackcat: { fabric: '#0f241a', letters: '#b9421d', wash: null }
+  blackcat: { fabric: '#121213', letters: '#b9421d', wash: null }
 };
 
 /**
