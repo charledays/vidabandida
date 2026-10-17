@@ -216,23 +216,23 @@ async function compose({ aka, skills, city, look }) {
   g.fillStyle = ACC; aura(g, () => g.fillText(aka.toUpperCase(), 50, SAFE_TOP + 172));
 
   // about: just the data, set close like a technical sheet, nothing labelled (the name is already above)
-  const x = 56, w = 400;
+  const x = 56, w = 470;
   const facts = [skills.length ? skills.join(", ") : "", city, look.tee].filter(Boolean).map(s => s.toUpperCase());
-  g.font = `500 17px ${MONO}`;
+  g.font = `500 21px ${MONO}`;
   const lines = facts.flatMap((f, i) => (i ? [null] : []).concat(wrap(g, f, w)));   // null: a rule between facts
-  const h = 44 + lines.reduce((n, l) => n + (l === null ? 14 : 23), 0);
+  const h = 52 + lines.reduce((n, l) => n + (l === null ? 16 : 28), 0);
   // sits at the bottom, clear of Instagram's reply bar; it may cross the shoes, so every line gets the aura
   let ty = H - SAFE_BOTTOM - 14 - h;
   const rule = (y, a) => aura(g, () => { g.fillStyle = `rgba(239,234,224,${a})`; g.fillRect(x, y, w, 1); });
-  g.fillStyle = CREAM; g.font = `700 22px ${SANS}`; aura(g, () => g.fillText("ABOUT", x, ty));
-  rule(ty + 14, 0.45);
-  ty += 44;
-  g.font = `500 17px ${MONO}`;
+  g.fillStyle = CREAM; g.font = `700 27px ${SANS}`; aura(g, () => g.fillText("ABOUT", x, ty));
+  rule(ty + 16, 0.45);
+  ty += 52;
+  g.font = `500 21px ${MONO}`;
   for (const l of lines) {
-    if (l === null) { rule(ty - 12, 0.25); ty += 14; continue; }
-    g.fillStyle = CREAM; aura(g, () => g.fillText(l, x, ty)); ty += 23;
+    if (l === null) { rule(ty - 14, 0.25); ty += 16; continue; }
+    g.fillStyle = CREAM; aura(g, () => g.fillText(l, x, ty)); ty += 28;
   }
-  rule(ty - 8, 0.45);
+  rule(ty - 10, 0.45);
 
   // footer
   g.fillStyle = "rgba(239,234,224,0.5)"; g.font = `500 14px ${MONO}`;
