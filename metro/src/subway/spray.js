@@ -3,11 +3,12 @@
  * in the car except the floor (wall, door frame, seats and their base, poles, windows, the door
  * leaves), and the few signs and ads that are fair game (options.paintable: the 601 tag, the
  * motto sign, the eye of Charles). Through the open doors or out on the platform it paints the
- * station wall too (options.walls: each station's paint layer); out there the Spray toggle shows
- * with a mouse as well: armed, a drag paints; off, a drag looks round. Over the line map the can steps aside for the normal pointer
- * so a stop can be picked. See-through overlays (acrylic glare, the glass's sheen) don't stop
- * the paint: it lands on what's behind them.
- * On touch, the Spray toggle turns drags from scrolling into painting.
+ * station wall too (options.walls: each station's paint layer). Over the line map the can steps
+ * aside for the normal pointer so a stop can be picked. See-through overlays (acrylic glare, the
+ * glass's sheen) don't stop the paint: it lands on what's behind them.
+ * The tools (bottom left): Mirar / Pintar, then, while painting, three brushes (BRUSHES), the
+ * colours and Limpiar. Looking, a drag turns the head; painting, it sprays, and Space, the right
+ * button or two fingers still look round.
  *
  * Fixed surfaces pick up paint through three projections of the car (onto the x-y, x-z and z-y
  * planes), injected into their materials: a surface shows the projection that faces it most
@@ -46,6 +47,21 @@ var BOX_MAX = new THREE.Vector3(4.4, 2.3, 1.0);
 var BOX_SIZE = BOX_MAX.clone().sub(BOX_MIN);
 /** How far (m) a surface may sit from where the paint landed and still show it. */
 var DEPTH_TOLERANCE = 0.04;
+/**
+ * The brushes. aerosol: the soft can, a wide misty halo with a few droplets; marcador: a solid
+ * marker line, clean edges; seco: a dry, grainy spray, no halo, a dense speckle that thins out.
+ * r: nozzle radius (× NOZZLE); halo: the soft gradient's strength; dots: droplets per stamp and
+ * their spread (× r); solid: a filled core (alpha); drip: how wide its runs are (× 1).
+ */
+var BRUSHES = {
+  aerosol: { name: 'Aerosol', r: 1.6, halo: 1.6, dots: 8, spread: 1, solid: 0, drip: 1,
+    icon: '<svg viewBox="0 0 32 20" aria-hidden="true"><path d="M3 14c6-2 8-9 14-8s8 7 12 3" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" opacity="0.45" filter="url(#brush-blur)"/><defs><filter id="brush-blur"><feGaussianBlur stdDeviation="1.4"/></filter></defs></svg>' },
+  marcador: { name: 'Marcador', r: 0.7, halo: 0, dots: 0, spread: 0, solid: 0.92, drip: 0.8,
+    icon: '<svg viewBox="0 0 32 20" aria-hidden="true"><path d="M3 14c6-2 8-9 14-8s8 7 12 3" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>' },
+  seco: { name: 'Spray seco', r: 1.1, halo: 0, dots: 34, spread: 1.25, solid: 0, drip: 0.6,
+    icon: '<svg viewBox="0 0 32 20" aria-hidden="true"><path d="M3 14c6-2 8-9 14-8s8 7 12 3" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-dasharray="0.6 1.4"/></svg>' }
+};
+
 /** Texture pixels per meter on the station walls: a big surface, so a coarser grain. */
 var WALL_PPM = 128;
 /** Pixels between raycasts when a stroke jumps from one surface to another. */
@@ -127,6 +143,7 @@ export function createSpray(options) {
   var selecting = options.selecting;
   var walls = options.walls || [];
   var onHiss = options.onHiss || function () {};
+  var onMode = options.onMode || function () {};
   var fine = options.finePointer;
 
   var keep = tracker(registry);
@@ -277,23 +294,33 @@ export function createSpray(options) {
   // --- Paint ---------------------------------------------------------------------------
 
   var color = rgb(COLORS[0].hex);
+  var brush = BRUSHES.aerosol;
 
   function puff(t, a, b, depth, amount) {
     if (t.ensure) t.ensure();
-    var r = NOZZLE * (t.ppm || PPM);
+    var B = brush;
+    var r = NOZZLE * B.r * (t.ppm || PPM);
     var p = t.toPx(a, b);
     var ctx = t.ctx;
-    var g = ctx.createRadialGradient(p[0], p[1], 0, p[0], p[1], r * 1.6);
-    g.addColorStop(0, rgba(color, 0.2 * amount));
-    g.addColorStop(0.45, rgba(color, 0.1 * amount));
-    g.addColorStop(1, rgba(color, 0));
-    ctx.fillStyle = g;
-    ctx.fillRect(p[0] - r * 1.6, p[1] - r * 1.6, r * 3.2, r * 3.2);
+    if (B.halo) {
+      var g = ctx.createRadialGradient(p[0], p[1], 0, p[0], p[1], r * 1.6);
+      g.addColorStop(0, rgba(color, 0.16 * B.halo * amount));
+      g.addColorStop(0.45, rgba(color, 0.08 * B.halo * amount));
+      g.addColorStop(1, rgba(color, 0));
+      ctx.fillStyle = g;
+      ctx.fillRect(p[0] - r * 1.6, p[1] - r * 1.6, r * 3.2, r * 3.2);
+    }
+    if (B.solid) {
+      ctx.fillStyle = rgba(color, B.solid);
+      ctx.beginPath();
+      ctx.arc(p[0], p[1], r, 0, Math.PI * 2);
+      ctx.fill();
+    }
     // Atomized droplets: dense in the core, thinning out into overspray.
     ctx.fillStyle = rgba(color, 0.8);
-    for (var k = 0; k < 16 * amount; k++) {
+    for (var k = 0; k < B.dots * amount; k++) {
       var s = 0.6 + Math.random() * 1.2;
-      ctx.fillRect(p[0] + gauss() * r * 0.9, p[1] + gauss() * r * 0.9, s, s);
+      ctx.fillRect(p[0] + gauss() * r * 0.9 * B.spread, p[1] + gauss() * r * 0.9 * B.spread, s, s);
     }
     if (t.depthCtx) {
       t.depthCtx.fillStyle = t.depthStyle(depth);
@@ -314,7 +341,7 @@ export function createSpray(options) {
       depth: hit.depth,
       v: 0.05 + Math.random() * 0.05,
       left: 0.03 + Math.random() * 0.14,
-      w: 0.003 + Math.random() * 0.003,
+      w: (0.003 + Math.random() * 0.003) * brush.drip,
       color: color
     });
   }
@@ -439,14 +466,22 @@ export function createSpray(options) {
   root.appendChild(cursor);
 
   var tools = root.querySelector('[data-spray-tools]');
-  var toggle = tools.querySelector('[data-spray-toggle]');
+  var lookBtn = tools.querySelector('[data-mode-look]');
+  var paintBtn = tools.querySelector('[data-mode-paint]');
   var swatches = tools.querySelector('[data-swatches]');
+  var brushBox = tools.querySelector('[data-brushes]');
+  var clearBtn = tools.querySelector('[data-clear]');
   tools.hidden = false;
   tools.classList.toggle('has-mouse', fine);
 
-  /** The Spray toggle: on a touch screen, drags paint; with a mouse it only counts on the platform. */
-  var armedTouch = false;
-  var platform = false;
+  /**
+   * Mirar / Pintar, the same on every device and everywhere (car or platform). Looking, a drag
+   * turns the head; painting, a drag sprays. While painting you can still look round without
+   * switching: hold Space or drag with the right button (mouse), or use two fingers (touch).
+   */
+  var mode = 'look';
+  var hold = false;                                                      // Space or the right button held
+  var touches = 0;                                                       // fingers down on the scene
   var hovering = false;
   var painting = false;
   var hissing = false;
@@ -454,30 +489,30 @@ export function createSpray(options) {
   var lastNdc = new THREE.Vector2();
   var wet = 0;
 
-  function armed() { return (fine && !platform) || armedTouch; }
-  function setArmed(on) {
-    armedTouch = on;
-    toggle.setAttribute('aria-pressed', on ? 'true' : 'false');
-    tools.classList.toggle('is-armed', on);
-    // While armed, a drag on the scene paints instead of scrolling the ride or looking round.
-    canvas.style.touchAction = on ? 'none' : '';
-  }
-  /** Out on the platform (true) or back on the train: a mouse gets the toggle there, armed to start. */
-  function setPlatform(on) {
-    if (on === platform) return;
-    platform = on;
-    tools.classList.toggle('on-platform', on);
-    if (fine) setArmed(on);
-    if (!on) painting = false;
+  function armed() { return mode === 'paint' && !hold && touches < 2; }
+  function setMode(m) {
+    if (m === mode) return;
+    mode = m;
+    lookBtn.setAttribute('aria-pressed', m === 'look' ? 'true' : 'false');
+    paintBtn.setAttribute('aria-pressed', m === 'paint' ? 'true' : 'false');
+    tools.classList.toggle('is-painting', m === 'paint');
+    // While painting, a finger's drag paints instead of scrolling the ride or looking round.
+    canvas.style.touchAction = m === 'paint' ? 'none' : '';
+    if (m !== 'paint') { painting = false; last = null; }
     refresh();
+    onMode(m);
   }
+  /** Out on the platform (true) or back on the train: nothing changes, the mode is the visitor's. */
+  function setPlatform() { refresh(); }
 
   function refresh() {
-    var away = selecting().onMap && !painting;
-    cursor.classList.toggle('is-on', fine && hovering);
+    var sel = selecting();
+    var paintNow = armed() || painting;
+    var away = !paintNow || (sel.onMap && !painting);
+    cursor.classList.toggle('is-on', fine && hovering && paintNow);
     cursor.classList.toggle('is-away', away);
     cursor.classList.toggle('is-spraying', hissing);
-    if (fine) canvas.style.cursor = away ? selecting().cursor || (selecting().stop >= 0 ? 'pointer' : '') : 'none';
+    if (fine) canvas.style.cursor = away ? sel.cursor || (sel.stop >= 0 ? 'pointer' : (hold ? 'grabbing' : 'grab')) : 'none';
   }
 
   function setNdc(e) {
@@ -492,6 +527,12 @@ export function createSpray(options) {
     refresh();
   }
   function onDown(e) {
+    if (e.pointerType === 'touch') {
+      touches++;
+      // A second finger: the two of them look round, the stroke stops.
+      if (touches > 1) { painting = false; last = null; refresh(); return; }
+    }
+    if (e.button === 2 && e.pointerType === 'mouse') { hold = true; painting = false; refresh(); return; }
     if (!armed() || e.button !== 0) return;
     onMove(e);
     if (selecting().onMap) return;
@@ -500,7 +541,9 @@ export function createSpray(options) {
     try { canvas.setPointerCapture(e.pointerId); } catch (err) { /* already released */ }
     refresh();
   }
-  function onUp() {
+  function onUp(e) {
+    if (e && e.pointerType === 'touch') touches = Math.max(0, touches - 1);
+    if (e && e.button === 2 && e.pointerType === 'mouse' && !spaceDown) hold = false;
     painting = false;
     last = null;
     refresh();
@@ -514,6 +557,25 @@ export function createSpray(options) {
   canvas.addEventListener('pointerup', onUp);
   canvas.addEventListener('pointercancel', onUp);
   canvas.addEventListener('pointerleave', onLeave);
+  // The right button looks round while painting: no context menu over the scene.
+  canvas.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+  // Hold Space to look round while painting (not while typing somewhere).
+  var spaceDown = false;
+  function typing(e) { var t = e.target; return t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)); }
+  window.addEventListener('keydown', function (e) {
+    if (e.code !== 'Space' || typing(e) || mode !== 'paint') return;
+    e.preventDefault();
+    if (spaceDown) return;
+    spaceDown = hold = true;
+    painting = false;
+    refresh();
+  });
+  window.addEventListener('keyup', function (e) {
+    if (e.code !== 'Space' || !spaceDown) return;
+    spaceDown = hold = false;
+    refresh();
+  });
+  window.addEventListener('blur', function () { spaceDown = hold = false; touches = 0; refresh(); });
 
   function pick(i) {
     color = rgb(COLORS[i].hex);
@@ -531,8 +593,43 @@ export function createSpray(options) {
   });
   pick(0);
 
-  toggle.addEventListener('click', function () { setArmed(!armedTouch); refresh(); });
-  tools.querySelector('[data-buff]').addEventListener('click', buff);
+  // The brushes, each shown by its own stroke (BRUSHES).
+  function pickBrush(id) {
+    brush = BRUSHES[id];
+    Array.prototype.forEach.call(brushBox.children, function (b) { b.setAttribute('aria-pressed', b.dataset.brush === id ? 'true' : 'false'); });
+  }
+  Object.keys(BRUSHES).forEach(function (id) {
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'brush';
+    b.dataset.brush = id;
+    b.setAttribute('aria-label', BRUSHES[id].name);
+    b.title = BRUSHES[id].name;
+    b.innerHTML = BRUSHES[id].icon;
+    b.addEventListener('click', function () { pickBrush(id); });
+    brushBox.appendChild(b);
+  });
+  pickBrush('aerosol');
+
+  lookBtn.addEventListener('click', function () { setMode('look'); });
+  paintBtn.addEventListener('click', function () { setMode('paint'); });
+  // Limpiar asks once: the first press arms it for a few seconds, the second wipes everything.
+  var clearTimer = 0;
+  clearBtn.addEventListener('click', function () {
+    if (!clearBtn.classList.contains('is-confirm')) {
+      clearBtn.classList.add('is-confirm');
+      clearBtn.textContent = '¿Limpiar todo?';
+      clearTimer = setTimeout(resetClear, 3000);
+      return;
+    }
+    buff();
+    resetClear();
+  });
+  function resetClear() {
+    clearTimeout(clearTimer);
+    clearBtn.classList.remove('is-confirm');
+    clearBtn.textContent = 'Limpiar';
+  }
 
   // --- Frame ---------------------------------------------------------------------------
 
@@ -599,8 +696,11 @@ export function createSpray(options) {
     group: group,
     update: update,
     buff: buff,
-    /** On touch, the Spray toggle is on: drags paint instead of riding. */
-    touchArmed: function () { return armedTouch; },
+    /** Painting right now (Pintar, not looking round with Space / the right button / two fingers): drags paint. */
+    touchArmed: function () { return armed(); },
+    /** 'look' | 'paint', and setting it. */
+    mode: function () { return mode; },
+    setMode: setMode,
     /** Out on the platform (true) or back on the train. */
     setPlatform: setPlatform,
     dispose: dispose

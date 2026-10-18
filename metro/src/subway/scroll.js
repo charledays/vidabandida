@@ -28,6 +28,8 @@ export function createScroll(options) {
   var onSwipe = options.onSwipe;
   /** True when a touch on the scene should paint, not ride (spray armed on touch). */
   var touchPaints = options.touchPaints || function () { return false; };
+  /** While painting, Space is held to look round (spray.js): it doesn't ride then. */
+  var spaceTaken = options.spaceTaken || function () { return false; };
   var current = options.start;
   var locked = false;
 
@@ -78,6 +80,7 @@ export function createScroll(options) {
     var tag = e.target && e.target.tagName;
     // Space and arrows on a control belong to the control.
     if (tag === 'BUTTON' || tag === 'A' || tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+    if (e.key === ' ' && spaceTaken()) return;
     var dir = NEXT_KEYS[e.key] ? 1 : PREV_KEYS[e.key] ? -1 : 0;
     if (!dir) return;
     e.preventDefault();

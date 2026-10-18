@@ -208,7 +208,7 @@ export function createUI(root, stations, links, handlers) {
     'd-out': ['Click the doors to step out', 'click'],
     'd-pan': ['Drag to look around', 'drag'],
     // Out on the platform the can is armed: the wall is fair game (Spray off to look round).
-    'd-spray': ['Hold to spray the wall', 'drag'],
+    'd-spray': ['Hold to spray · Space to look around', 'drag'],
     'd-art': ['Click the art to look closer', 'click'],
     'd-back': ['Click or Esc to step back', 'click']
   };

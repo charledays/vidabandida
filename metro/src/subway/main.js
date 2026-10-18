@@ -16,7 +16,7 @@ import * as THREE from 'three';
 import { CAR, WORLD, LEG, CRUISE_SPEED, START, START_CLOSED, DOOR_WALK } from './config.js';
 import { stations, mapStops, adArt, bandidajeFino } from './stations.js?v=20261019b';
 import { createTimeline } from './timeline.js';
-import { createScroll } from './scroll.js';
+import { createScroll } from './scroll.js?v=20261020';
 import { createJourney } from './journey.js';
 import { stationContent } from './content.js';
 import { createMaterials } from './materials.js';
@@ -31,8 +31,8 @@ import { createTunnel } from './exterior/tunnel.js';
 import { buildStation } from './exterior/station.js?v=20261019f';
 import { createCameraRig } from './camera-rig.js';
 import { createAudio } from './audio.js';
-import { createUI } from './ui.js?v=20261019';
-import { createSpray } from './spray.js?v=20261019';
+import { createUI } from './ui.js?v=20261020';
+import { createSpray } from './spray.js?v=20261020';
 import { web } from './web.js';
 import { createBandits } from './bandits.js';
 
@@ -411,18 +411,35 @@ function start() {
   var look = { yaw: 0, toYaw: 0, vel: 0, drag: null, touch: false };
   var detachLook = (function () {
     function out() { return atDoor.to && atDoor.f === 1 && !busy; }
+    // Fingers down on the scene (pointer id -> x): two of them look round even while painting.
+    var fingers = {};
+    function fingersX() {
+      var ids = Object.keys(fingers), x = 0;
+      ids.forEach(function (id) { x += fingers[id]; });
+      return ids.length ? x / ids.length : 0;
+    }
     function onDown(e) {
-      // A finger looks round the same way, except while painting; neither turns up close to the art.
-      if (!out() || e.button > 0 || walk.inspectTo) return;
-      if (spray.touchArmed()) return;                                    // armed: a drag paints
-      look.drag = { x: e.clientX, yaw: look.toYaw, touch: e.pointerType === 'touch', lastX: e.clientX, lastT: e.timeStamp, lastMove: 0 };
+      if (e.pointerType === 'touch') fingers[e.pointerId] = e.clientX;
+      // Neither turns up close to the art. Mirar: any drag looks round. Pintar: a drag paints, but
+      // the right button, Space (spray.touchArmed() is off while held) or two fingers still look.
+      if (!out() || walk.inspectTo) return;
+      var right = e.pointerType === 'mouse' && e.button === 2;
+      var two = e.pointerType === 'touch' && Object.keys(fingers).length >= 2;
+      if (e.button > 0 && !right) return;
+      if (spray.touchArmed() && !right && !two) return;
+      var x = two ? fingersX() : e.clientX;
+      look.drag = { x: x, yaw: look.toYaw, touch: e.pointerType === 'touch', two: two, lastX: x, lastT: e.timeStamp, lastMove: 0 };
       look.vel = 0;
-      try { canvas.setPointerCapture(e.pointerId); } catch (err) { /* pointer already gone */ }
+      if (!two) { try { canvas.setPointerCapture(e.pointerId); } catch (err) { /* pointer already gone */ } }
     }
     function onMove(e) {
+      if (e.pointerType === 'touch' && fingers[e.pointerId] != null) fingers[e.pointerId] = e.clientX;
       if (!look.drag) return;
+      // Two fingers: their midpoint drives the look.
+      if (look.drag.two) e = { clientX: fingersX(), timeStamp: e.timeStamp };
       var k = LOOK.perPx * 900 / Math.max(500, window.innerHeight);
       // A finger: the view sticks to it (a screen's width turns the head one frame's width).
+      if (Math.abs(e.clientX - look.drag.x) > 40) onLooked();
       if (!look.drag.touch && Math.abs(e.clientX - look.drag.x) > 40) ui.usedHint('d-pan');
       if (look.drag.touch) {
         k = 2 * Math.atan(Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2) * camera.aspect) / window.innerWidth;
@@ -441,6 +458,10 @@ function start() {
       look.toYaw = Math.max(-m, Math.min(m, look.drag.yaw + (e.clientX - look.drag.x) * k));
     }
     function onUp(e) {
+      var wasTwo = look.drag && look.drag.two;
+      if (e.pointerType === 'touch') delete fingers[e.pointerId];
+      // A two-finger look lasts while both are down; then a lone finger doesn't take it over.
+      if (wasTwo && Object.keys(fingers).length >= 2) return;
       // Held still before lifting: no flick. A mouse never flicks.
       if (look.drag && (!look.drag.touch || e.timeStamp - look.drag.lastMove > 80)) look.vel = 0;
       look.drag = null;
@@ -469,6 +490,12 @@ function start() {
    */
   var SEAT_LOOK = {
     left: 0.42, right: -0.62,
+    /**
+     * Where the head rests (radians, - = right). On a phone, turned toward the seated panda: the
+     * narrow frame would otherwise hold only the doors. On a wide screen, square on to the doors,
+     * where the whole car already reads. Looking round comes back here, and so does the ride.
+     */
+    home: phone ? -0.56 : 0,
     /** How far past an end the view stretches (radians, at most), and how stiff that feels. */
     stretch: 0.1, resist: 0.35,
     /** Flick glide: velocity falls by e every 1/friction s; spring back from an overshoot. */
@@ -477,7 +504,7 @@ function start() {
     /** Phone turn → view turn, how fast the tilt settles back to centre (1/s), its smoothing. */
     tilt: 0.6, tiltHome: 0.25, tiltSmooth: 7
   };
-  var seatLook = { yaw: 0, drag: 0, vel: 0, gyro: 0, tiltDeg: 0, touch: null, released: 0, lastMove: 0 };
+  var seatLook = { yaw: SEAT_LOOK.home, drag: SEAT_LOOK.home, vel: 0, gyro: 0, tiltDeg: 0, touch: null, released: 0, lastMove: 0 };
   /** Has the visitor looked around yet? The first hint teaches it, before opening the doors. */
   var looked = false;
   /** Past an end, the finger's travel counts less and less (rubber band). */
@@ -504,13 +531,19 @@ function start() {
     }
     if (Math.abs(o.vel) < 0.005) o.vel = 0;
   }
-  function seatedHere() { return phone && !atDoor.to && !atDoor.f && !busy; }
+  function seatedHere() { return !atDoor.to && !atDoor.f && !busy; }
+  /** When a mouse look-drag last ended (ms): a drag that ends over the doors isn't a click on them. */
+  var lookDragEnd = 0;
   var detachSeatLook = (function () {
     if (!phone) return function () {};
     function onStart(e) {
       // A finger down catches the view where it is: any glide stops.
-      seatLook.touch = e.touches.length === 1 && seatedHere() && !spray.touchArmed()
-        ? { x: e.touches[0].clientX, y: e.touches[0].clientY, raw: seatLook.drag, lastX: e.touches[0].clientX, lastT: e.timeStamp, axis: null } : null;
+      // One finger looks in Mirar; two fingers look in either mode (in Pintar one finger paints).
+      var two = e.touches.length === 2;
+      var ok = seatedHere() && (two || (e.touches.length === 1 && spray.mode() !== 'paint'));
+      var x0 = two ? (e.touches[0].clientX + e.touches[1].clientX) / 2 : e.touches[0].clientX;
+      seatLook.touch = ok
+        ? { x: x0, y: e.touches[0].clientY, raw: seatLook.drag, lastX: x0, lastT: e.timeStamp, axis: two ? 'x' : null, two: two } : null;
       if (seatLook.touch) seatLook.vel = 0;
     }
     function onMove(e) {
@@ -518,7 +551,8 @@ function start() {
       if (!t || !seatedHere()) return;
       // The view sticks to the finger: drag right and the car slides right (you turn left).
       var hfov = 2 * Math.atan(Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2) * camera.aspect);
-      var x = e.touches[0].clientX;
+      if (t.two && e.touches.length < 2) return;
+      var x = t.two ? (e.touches[0].clientX + e.touches[1].clientX) / 2 : e.touches[0].clientX;
       // Axis lock: the first 10 px decide. A mostly vertical swipe (a ride) never pans; a
       // sideways one pans from where the finger is then, so the lock itself doesn't jump.
       if (!t.axis) {
@@ -530,7 +564,7 @@ function start() {
       if (t.axis !== 'x') return;
       var perPx = hfov / window.innerWidth;
       seatLook.drag = stretched(t.raw + (x - t.x) * perPx);
-      if (Math.abs(x - t.x) > 40) looked = true;
+      if (Math.abs(x - t.x) > 40) { looked = true; onLooked(); }
       // Finger speed (rad/s), smoothed over the last few moves, for the flick.
       var dts = (e.timeStamp - t.lastT) / 1000;
       if (dts > 0) {
@@ -543,6 +577,8 @@ function start() {
     }
     var asked = false;
     function onEnd(e) {
+      // A two-finger look ends when a finger lifts; the other one doesn't take over.
+      if (seatLook.touch && seatLook.touch.two && e.touches.length >= 2) return;
       if (seatLook.touch) {
         seatLook.released = performance.now();
         // Held still before lifting: no flick.
@@ -581,6 +617,84 @@ function start() {
       canvas.removeEventListener('touchend', onEnd);
       canvas.removeEventListener('touchcancel', onEnd);
       window.removeEventListener('devicemotion', onTurn);
+    };
+  })();
+
+  /**
+   * Teaching the tools, once. First visit: a tip over the Mirar / Pintar switch ("drag to explore,
+   * tap Pintar to paint"), gone as soon as the visitor looks round or picks a mode. Until they have
+   * painted once, Pintar takes a soft breath each time the doors open at a stop. Remembered in
+   * localStorage (wrapped: private windows may refuse it).
+   */
+  var TIP_KEY = 'vidabandida.metro.tip', PAINTED_KEY = 'vidabandida.metro.painted';
+  function remembered(k) { try { return localStorage.getItem(k) === '1'; } catch (e) { return false; } }
+  function remember(k) { try { localStorage.setItem(k, '1'); } catch (e) { /* private mode */ } }
+  var modeTip = root.querySelector('[data-mode-tip]');
+  var paintBtn = root.querySelector('[data-mode-paint]');
+  var tipDone = remembered(TIP_KEY), painted = remembered(PAINTED_KEY);
+  function hideTip() {
+    if (tipDone) return;
+    tipDone = true;
+    remember(TIP_KEY);
+    modeTip.hidden = true;
+  }
+  function onLooked() { hideTip(); lookedOnce = true; if (arrows) arrows.hidden = true; }
+  function onModePicked(m) {
+    hideTip();
+    if (m === 'paint' && !painted) { painted = true; remember(PAINTED_KEY); paintBtn.classList.remove('is-nudge'); }
+  }
+  paintBtn.addEventListener('animationend', function () { paintBtn.classList.remove('is-nudge'); });
+  var wasOpen = false;
+  /** Each frame: the tip once the scene is up; the nudge on the frame the doors finish opening. */
+  function teach(open) {
+    if (!tipDone && modeTip.hidden && root.classList.contains('is-loaded')) modeTip.hidden = false;
+    if (open && !wasOpen && !painted && !reduceMotion) {
+      paintBtn.classList.remove('is-nudge');
+      void paintBtn.offsetWidth;                                         // restart the animation
+      paintBtn.classList.add('is-nudge');
+    }
+    wasOpen = open;
+  }
+
+  /**
+   * Seated with a mouse: a drag turns the head along the car, as a finger does on a phone (in
+   * Mirar, or with the right button or Space held while painting). Under 6 px it's still a click,
+   * so the doors, the map, the signs and the tags keep working.
+   */
+  var detachDeskSeatLook = (function () {
+    if (phone) return function () {};
+    var d = null;
+    function onDown(e) {
+      if (e.pointerType !== 'mouse' || !seatedHere()) return;
+      var right = e.button === 2;
+      if ((e.button !== 0 && !right) || (spray.touchArmed() && !right) || lineMap.pointer().onMap) return;
+      d = { x: e.clientX, raw: seatLook.drag, moved: false };
+    }
+    function onMove(e) {
+      if (!d) return;
+      if (!seatedHere()) { d = null; seatLook.touch = null; return; }
+      if (!d.moved && Math.abs(e.clientX - d.x) < 6) return;
+      d.moved = true;
+      // Holds the view while dragging (no drift home), like a finger does.
+      seatLook.touch = seatLook.touch || { desk: true };
+      var hfov = 2 * Math.atan(Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2) * camera.aspect);
+      seatLook.drag = stretched(d.raw + (e.clientX - d.x) * hfov / window.innerWidth);
+      seatLook.vel = 0;
+      looked = true;
+      onLooked();
+    }
+    function onUp() {
+      if (d && d.moved) { lookDragEnd = performance.now(); seatLook.released = performance.now(); }
+      if (seatLook.touch && seatLook.touch.desk) seatLook.touch = null;
+      d = null;
+    }
+    canvas.addEventListener('pointerdown', onDown);
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+    return function () {
+      canvas.removeEventListener('pointerdown', onDown);
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
     };
   })();
 
@@ -641,11 +755,16 @@ function start() {
       else if (!eye.hover && lineMap.pointer().stop < 0) canvas.style.cursor = '';
     };
     var pressed = false;
+    var downAt = null;
     function onMove(e) { self.set(over(e)); }
-    function onDown(e) { onMove(e); pressed = self.hover; }
+    function onDown(e) { onMove(e); pressed = self.hover; downAt = { x: e.clientX, y: e.clientY }; }
     function onClick(e) {
+      // A drag (a look round, a spray stroke) that ends on the doors isn't a click on them.
+      var still = downAt && Math.abs(e.clientX - downAt.x) + Math.abs(e.clientY - downAt.y) < 8;
+      downAt = null;
+      if (!still) { pressed = false; return; }
       if (overShut(e) && openDoors()) { pressed = false; return; }
-      if (tagLinks.over(e)) { pressed = false; return; }
+      if (tagLinks.over(e) || performance.now() - lookDragEnd < 300) { pressed = false; return; }
       // Seen through the doorway, the visit sign takes the click.
       if (pressed && !busy && !visit.hover && over(e)) { stepOntoPlatform(); self.set(false); }
       pressed = false;
@@ -751,7 +870,8 @@ function start() {
       return doorway.hover ? { onMap: true, stop: 0 } : p;
     },
     finePointer: finePointer,
-    onHiss: function (on) { audio.spray(on); if (on && atDoor.to && !phone) ui.usedHint('d-spray'); }
+    onHiss: function (on) { audio.spray(on); if (on && atDoor.to && !phone) ui.usedHint('d-spray'); },
+    onMode: onModePicked
   });
   scene.add(spray.group);
   var ui = createUI(root, stations, mapStops, {
@@ -898,7 +1018,8 @@ function start() {
     // One step, one station, round the loop either way.
     onStep: rideStep,
     onSwipe: phone ? onSwipe : null,
-    touchPaints: spray.touchArmed
+    touchPaints: spray.touchArmed,
+    spaceTaken: function () { return spray.mode() === 'paint'; }
   });
   // ?p=0.76 freezes the journey at that progress (stills, design review).
   var frozen = params.has('p') ? parseFloat(params.get('p')) || 0 : null;
@@ -929,6 +1050,49 @@ function start() {
 
   var clock = new THREE.Clock();
   var raf = null;
+
+  /**
+   * The opening shot: once the loader has gone, the head sweeps from the far left of the car,
+   * past the doors, round to where it rests on the panda (INTRO.s, eased in and out). A drag or a
+   * tap takes over at once. Then two arrows breathe at the sides of the screen until the visitor
+   * looks round; pressing one turns the head that way. No sweep with reduced motion, coming back
+   * from a section page, or a held ?yaw.
+   */
+  var INTRO = { from: SEAT_LOOK.left, s: 2.6 };
+  var intro = reduceMotion || backAt != null || stillYaw != null ? null : { t0: 0 };
+  if (intro) { seatLook.drag = seatLook.yaw = INTRO.from; }
+  var introDone = !intro;
+  var arrows = root.querySelector('[data-look-arrows]');
+  var lookedOnce = false;
+  function introStep() {
+    if (!intro) return;
+    // Held at the start (no drift home) until the scene is up.
+    if (!root.classList.contains('is-loaded')) { seatLook.released = performance.now(); return; }
+    if (seatLook.touch || !seatedHere()) { intro = null; introDone = true; return; }
+    if (!intro.t0) intro.t0 = performance.now();
+    var t = Math.min(1, (performance.now() - intro.t0) / 1000 / INTRO.s);
+    var e = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    seatLook.drag = INTRO.from + (SEAT_LOOK.home - INTRO.from) * e;
+    seatLook.vel = 0;
+    seatLook.released = performance.now();
+    if (t >= 1) { intro = null; introDone = true; }
+  }
+  function showArrows() {
+    var on = introDone && !lookedOnce && seatedHere() && root.classList.contains('is-loaded');
+    if (arrows.hidden === !on) return;
+    arrows.hidden = !on;
+  }
+  Array.prototype.forEach.call(arrows.querySelectorAll('[data-look-dir]'), function (b) {
+    b.addEventListener('click', function () {
+      if (!seatedHere()) return;
+      var dir = +b.getAttribute('data-look-dir');                          // +1 left, -1 right
+      seatLook.drag = Math.max(SEAT_LOOK.right, Math.min(SEAT_LOOK.left, seatLook.drag + dir * 0.38));
+      seatLook.vel = 0;
+      seatLook.released = performance.now();
+      looked = true;
+      onLooked();
+    });
+  });
 
   function tick() {
     raf = requestAnimationFrame(tick);
@@ -996,9 +1160,12 @@ function start() {
     if ((look.drag && look.drag.touch) || look.vel) look.yaw = look.toYaw;
     else look.yaw += (look.toYaw - look.yaw) * ease;
     rig.setLook(look.yaw);
+    introStep();
+    showArrows();
     // Seated on a phone: the drag with its glide and rubber band, plus the softened phone turn.
     var seated = seatedHere();
-    if (!seated) { seatLook.drag = 0; seatLook.vel = 0; seatLook.touch = null; seatLook.tiltDeg = 0; }
+    // (While the opening sweep waits for the scene, the head holds at its start.)
+    if (!seated) { seatLook.drag = intro ? INTRO.from : SEAT_LOOK.home; seatLook.vel = 0; seatLook.touch = null; seatLook.tiltDeg = 0; }
     else if (!seatLook.touch) {
       var L = SEAT_LOOK.left, R = SEAT_LOOK.right;
       // Glide on from a flick, slowing; reduced motion skips the glide.
@@ -1011,8 +1178,8 @@ function start() {
         seatLook.drag += (edge - seatLook.drag) * (1 - Math.exp(-dt * SEAT_LOOK.spring));
         seatLook.drag = Math.max(R - SEAT_LOOK.stretch, Math.min(L + SEAT_LOOK.stretch, seatLook.drag));
       } else if (Math.abs(seatLook.vel) < 0.02 && performance.now() - seatLook.released > SEAT_LOOK.returnMs) {
-        // Left alone: drift home to the doors.
-        seatLook.drag *= reduceMotion ? 0 : Math.exp(-dt * 2.5);
+        // Left alone: drift home (toward the panda).
+        seatLook.drag = SEAT_LOOK.home + (seatLook.drag - SEAT_LOOK.home) * (reduceMotion ? 0 : Math.exp(-dt * 2.5));
       }
     }
     // The phone's turn settles back to centre over time, and reaches the view smoothed and scaled.
@@ -1097,6 +1264,7 @@ function start() {
     }
     ui.setStep(exit ? null : stepOut, !exit && !busy && !!atDoor.to && atDoor.f === 1);
     spray.update(dt);
+    teach(doorway.ready());
     adStrip.update(camera.position.x);
     signage.update(state);
     lastState = state;
