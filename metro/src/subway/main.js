@@ -202,13 +202,33 @@ function start() {
     if (exit || !doorway.ready()) return false;
     var stop = lastState && stations[lastState.stationIndex];
     if (!stop || !stop.href) return false;
-    // From out on the platform (the poster's click) there's no walk to do: just the dip.
-    exit = { t0: performance.now(), href: stop.href, gone: false, quick: atDoor.f > 0 };
+    // From out on the platform (the poster's click) the walk starts where you stand and look.
+    exit = { t0: performance.now(), href: stop.href, gone: false, platform: atDoor.f > 0, yaw0: look.yaw, spot0: walk.x, inspect0: walk.inspect };
     if (window.vbTrack) window.vbTrack('metro_exit', { station: stop.id });
     setBusy('exit');
     // Coming back (the browser's back button) lands you in your seat at this same stop, doors open.
     try { sessionStorage.setItem(BACK_KEY, String(lastState.stationIndex)); } catch (e) { /* private mode */ }
     return true;
+  }
+  /**
+   * Already out on the platform: no doorway to cross. From where you stand (and look), step up
+   * towards the wall, turn right while setting off, and on down the platform into the dip.
+   */
+  var PLATFORM_EXIT = { lane1: 1.2, turn0: 0.25, turn1: 1.35, walk0: 0.55, dip0: 2.35, total: 2.9 };
+  function platformExitPose(t, e) {
+    if (reduceMotion) return { door: 1, yaw: e.yaw0, along: e.spot0, lane: 0, inspect: e.inspect0, dip: Math.min(1, t / 0.4) };
+    var s = function (x) { x = Math.max(0, Math.min(1, x)); return x * x * (3 - 2 * x); };
+    var P = PLATFORM_EXIT;
+    var w = Math.max(0, t - P.walk0), ramp = 1.1;
+    var turn = s((t - P.turn0) / (P.turn1 - P.turn0));
+    return {
+      door: 1,
+      lane: s(t / P.lane1),
+      yaw: e.yaw0 + (-Math.PI / 2 - e.yaw0) * turn,
+      along: e.spot0 + EXIT.pace * (w < ramp ? w * w / (2 * ramp) : w - ramp / 2),
+      inspect: e.inspect0 * (1 - s(t / 0.6)),
+      dip: s((t - P.dip0) / (P.total - P.dip0))
+    };
   }
   /** Where the walk is at time t (s): door walk 0..1, lane 0..1, head yaw (right is negative), metres along, dip. */
   function exitPose(t) {
@@ -938,10 +958,16 @@ function start() {
     walk.inspect = reduceMotion ? walk.inspectTo : Math.max(0, Math.min(1, walk.inspect + (walk.inspectTo ? 1 : -1) * dt / 1.1));
     rig.setSpot(walk.x);
     rig.setInspect(walk.at, walk.inspect);
-    if (exit && exit.quick) {
-      var qt = (performance.now() - exit.t0) / 1000;
-      dip = Math.max(dip, Math.min(1, qt / 0.6));
-      if (qt >= 0.6 && !exit.gone) { exit.gone = true; window.location.href = exit.href; }
+    if (exit && exit.platform) {
+      var pt = (performance.now() - exit.t0) / 1000;
+      var pp = platformExitPose(pt, exit);
+      rig.setDoor(pp.door);
+      rig.setLook(pp.yaw);
+      rig.setSpot(pp.along);
+      rig.setLane(EXIT_LANE, pp.lane);
+      rig.setInspect(walk.at, pp.inspect);
+      dip = Math.max(dip, pp.dip);
+      if (pt >= (reduceMotion ? 0.4 : PLATFORM_EXIT.total) && !exit.gone) { exit.gone = true; window.location.href = exit.href; }
     } else if (exit) {
       var et = (performance.now() - exit.t0) / 1000;
       var ep = exitPose(et);
