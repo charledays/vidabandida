@@ -207,6 +207,8 @@ export function createUI(root, stations, links, handlers) {
     'd-ride': ['Scroll for the next stop', 'wheel'],
     'd-out': ['Click the doors to step out', 'click'],
     'd-pan': ['Drag to look around', 'drag'],
+    // Out on the platform the can is armed: the wall is fair game (Spray off to look round).
+    'd-spray': ['Hold to spray the wall', 'drag'],
     'd-art': ['Click the art to look closer', 'click'],
     'd-back': ['Click or Esc to step back', 'click']
   };

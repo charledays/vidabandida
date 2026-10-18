@@ -133,7 +133,7 @@ body{overflow-x:hidden;}
 .spray-tools{position:absolute;left:var(--edge);bottom:calc(env(safe-area-inset-bottom,0px) + var(--edge));
   display:flex;align-items:center;gap:0.6rem;}
 .spray-tools[hidden]{display:none;}
-.spray-tools.has-mouse .spray-toggle{display:none;}
+.spray-tools.has-mouse:not(.on-platform) .spray-toggle{display:none;}
 .spray-tools:not(.has-mouse):not(.is-armed) .swatches,
 .spray-tools:not(.has-mouse):not(.is-armed) [data-buff]{display:none;}
 .spray-toggle[aria-pressed="true"]{background:var(--line);border-color:var(--line);color:#111;}
@@ -317,6 +317,6 @@ html.is-stepped,html.is-stepped body{overflow:hidden;overscroll-behavior:none;he
   <div class="debug" data-debug hidden></div>
 </div>
 <script src="/analytics.js"></script>
-<script type="module" src="/metro/src/subway/main.js?v=20261018b"></script>
+<script type="module" src="/metro/src/subway/main.js?v=20261019"></script>
 </body>
 </html>

@@ -6,8 +6,9 @@
  * The train stands at a stop with its doors open until something asks for a ride: a scroll
  * step (scroll.js: one gesture, one station, either way round the loop), a stop on the line
  * map, or a secret door. The ride is the source of state until the doors are open at the new
- * stop; then the train rests there. With the doors open you can step out onto the platform,
- * and the station's sign on the wall takes you to its section's page.
+ * stop; then the train rests there. With the doors open you can step out onto the platform
+ * (and spray the station wall there), and the station's sign on the wall takes you to its
+ * section's page.
  *
  * No part talks to another; they all read the same state object.
  */
@@ -27,11 +28,11 @@ import { createLighting } from './carriage/lighting.js';
 import { createLineMap } from './carriage/line-map.js';
 import { createAdStrip, createPanelAd } from './carriage/ad-strip.js';
 import { createTunnel } from './exterior/tunnel.js';
-import { buildStation } from './exterior/station.js?v=20261018b';
+import { buildStation } from './exterior/station.js?v=20261019';
 import { createCameraRig } from './camera-rig.js';
 import { createAudio } from './audio.js';
-import { createUI } from './ui.js';
-import { createSpray } from './spray.js';
+import { createUI } from './ui.js?v=20261019';
+import { createSpray } from './spray.js?v=20261019';
 import { web } from './web.js';
 import { createBandits } from './bandits.js';
 
@@ -201,7 +202,8 @@ function start() {
     if (exit || !doorway.ready()) return false;
     var stop = lastState && stations[lastState.stationIndex];
     if (!stop || !stop.href) return false;
-    exit = { t0: performance.now(), href: stop.href, gone: false };
+    // From out on the platform (the poster's click) there's no walk to do: just the dip.
+    exit = { t0: performance.now(), href: stop.href, gone: false, quick: atDoor.f > 0 };
     if (window.vbTrack) window.vbTrack('metro_exit', { station: stop.id });
     setBusy('exit');
     // Coming back (the browser's back button) lands you in your seat at this same stop, doors open.
@@ -316,7 +318,7 @@ function start() {
     function onDown(e) {
       // A finger looks round the same way, except while painting; neither turns up close to the art.
       if (!out() || e.button > 0 || walk.inspectTo) return;
-      if (e.pointerType === 'touch' && spray.touchArmed()) return;
+      if (spray.touchArmed()) return;                                    // armed: a drag paints
       look.drag = { x: e.clientX, yaw: look.toYaw, touch: e.pointerType === 'touch', lastX: e.clientX, lastT: e.timeStamp, lastMove: 0 };
       look.vel = 0;
       try { canvas.setPointerCapture(e.pointerId); } catch (err) { /* pointer already gone */ }
@@ -492,6 +494,13 @@ function start() {
     if (!on && atDoor.to) beenOut = true;
     if (on && !phone) ui.usedHint('d-out');
     atDoor.to = on ? 1 : 0;
+    spray.setPlatform(!!on);
+  }
+  /** Off the train and onto the platform (the doorway's click, the Step out arrow). */
+  function stepOntoPlatform() {
+    if (exit || atDoor.to || !doorway.ready()) return;
+    if (window.vbTrack) window.vbTrack('metro_platform', { station: (stations[lastState.stationIndex] || {}).id });
+    toDoor(true);
   }
   var doorway = (function () {
     var mat = new THREE.MeshBasicMaterial({ visible: false });
@@ -541,7 +550,7 @@ function start() {
     function onClick(e) {
       if (overShut(e) && openDoors()) { pressed = false; return; }
       // Seen through the doorway, the visit sign takes the click.
-      if (pressed && !busy && !visit.hover && over(e)) { startExit(); self.set(false); }
+      if (pressed && !busy && !visit.hover && over(e)) { stepOntoPlatform(); self.set(false); }
       pressed = false;
     }
     // Escape: back from the art first, then onto the train.
@@ -629,6 +638,8 @@ function start() {
     surfaces: [shell.group, seats.group, doors.group],
     unpaintable: [mats.floor],
     noPaint: [lineMap.group, signage.group, adStrip.group],
+    // The station walls, through the open doors and out on the platform.
+    walls: stationViews.map(function (v) { return v.paintLayer; }).filter(Boolean),
     // Fair game all the same: the 601 tag, the motto sign over the window, the eye of Charles.
     paintable: signage.tags.concat([signage.motto.mesh, eyeAd.print]),
     // The can steps aside over the line map, the doorway and the visit sign, so they can be
@@ -637,20 +648,21 @@ function start() {
       var p = lineMap.pointer();
       if (visit.hover) return { onMap: true, stop: 0 };
       if (atDoor.to) {
+        if (spray && spray.touchArmed() && !walk.inspectTo) return { onMap: false, stop: -1 };
         return { onMap: true, stop: -1, cursor: walk.inspectTo ? 'zoom-out' : look.drag ? 'grabbing' : walk.artHover ? 'zoom-in' : 'grab' };
       }
       return doorway.hover ? { onMap: true, stop: 0 } : p;
     },
     finePointer: finePointer,
-    onHiss: audio.spray
+    onHiss: function (on) { audio.spray(on); if (on && atDoor.to && !phone) ui.usedHint('d-spray'); }
   });
   scene.add(spray.group);
   var ui = createUI(root, stations, mapStops, {
     phone: phone,
     toggleSound: function () { return audio.setEnabled(!audio.isEnabled()); },
     ride: rideToStation,
-    stepOut: function () { startExit(); },
-    stepIn: function () {}
+    stepOut: stepOntoPlatform,
+    stepIn: function () { if (atDoor.to && !busy) toDoor(false); }
   });
 
   /**
@@ -684,7 +696,7 @@ function start() {
       walk.artHover = !!(view && artAt(e, view));
     }
     function onClick(e) {
-      if (!standing() || visit.over(e)) return;
+      if (!standing() || visit.over(e) || spray.touchArmed()) return;      // armed, a click is a dot of paint
       if (e.pointerType !== 'touch' && down && Math.abs(e.clientX - down.x) + Math.abs(e.clientY - down.y) > 6) return;
       if (walk.inspectTo) {
         walk.inspectTo = 0;
@@ -926,7 +938,11 @@ function start() {
     walk.inspect = reduceMotion ? walk.inspectTo : Math.max(0, Math.min(1, walk.inspect + (walk.inspectTo ? 1 : -1) * dt / 1.1));
     rig.setSpot(walk.x);
     rig.setInspect(walk.at, walk.inspect);
-    if (exit) {
+    if (exit && exit.quick) {
+      var qt = (performance.now() - exit.t0) / 1000;
+      dip = Math.max(dip, Math.min(1, qt / 0.6));
+      if (qt >= 0.6 && !exit.gone) { exit.gone = true; window.location.href = exit.href; }
+    } else if (exit) {
       var et = (performance.now() - exit.t0) / 1000;
       var ep = exitPose(et);
       rig.setDoor(ep.door);
@@ -949,12 +965,12 @@ function start() {
     if (phone) {
       if (looked) ui.usedHint('look');
       ui.setHint(busy ? null
-        : atDoor.to ? (atDoor.f === 1 ? (walk.inspectTo ? 'inspect' : ui.seenHint('platform') ? 'art' : 'platform') : null)
+        : atDoor.to ? (atDoor.f === 1 ? (walk.inspectTo ? 'inspect' : spray.touchArmed() ? null : ui.seenHint('platform') ? 'art' : 'platform') : null)
         : closed ? (looked || ui.seenHint('look') ? 'closed' : 'look')
         : atStop && beenOut ? 'seat' : null);
     } else {
       ui.setHint(busy ? null
-        : atDoor.to ? (atDoor.f === 1 ? (walk.inspectTo ? 'd-back' : ui.seenHint('d-pan') ? 'd-art' : 'd-pan') : null)
+        : atDoor.to ? (atDoor.f === 1 ? (walk.inspectTo ? 'd-back' : spray.touchArmed() ? 'd-spray' : ui.seenHint('d-pan') ? 'd-art' : 'd-pan') : null)
         : closed ? 'd-open'
         : atStop ? (ui.seenHint('d-ride') ? 'd-out' : 'd-ride') : null);
     }
@@ -976,7 +992,7 @@ function start() {
       stepAt.set(CAR.doorCenterX, 0.3, -0.05).project(camera);
       stepOut = { x: (stepAt.x + 1) / 2 * window.innerWidth, y: (1 - stepAt.y) / 2 * window.innerHeight };
     }
-    ui.setStep(exit ? null : stepOut, false);
+    ui.setStep(exit ? null : stepOut, !exit && !busy && !!atDoor.to && atDoor.f === 1);
     spray.update(dt);
     adStrip.update(camera.position.x);
     signage.update(state);

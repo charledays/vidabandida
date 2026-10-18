@@ -527,6 +527,19 @@ export function buildStation(data, mats, registry, loader, gap, content, options
   group.add(wall);
   var tagGroup = content ? null : wallTags(data, loader, keep, track);
   if (tagGroup) group.add(tagGroup);
+  // The wall takes spray (spray.js paints it): a clear layer over the tiles and tags, under the
+  // poster, riding with the tags so it stays centred on the poster. Hidden until it has paint.
+  var paintLayer = null;
+  if (tagGroup) {
+    var PAINT_W = 20, PAINT_H = 3;
+    var paintMat = track(new THREE.MeshStandardMaterial({ transparent: true, depthWrite: false, roughness: 0.75 }));
+    var paintMesh = new THREE.Mesh(keep(new THREE.PlaneGeometry(PAINT_W, PAINT_H)), paintMat);
+    paintMesh.position.set(0, PAINT_H / 2, S.wallZ + 0.0095);
+    paintMesh.renderOrder = 2;
+    paintMesh.visible = false;
+    tagGroup.add(paintMesh);
+    paintLayer = { mesh: paintMesh, width: PAINT_W, height: PAINT_H };
+  }
 
   // Station identity (frieze, name tablets, hanging signs) only where there's no takeover: a
   // taken-over stop gives that wall to the work, and its name stays on the map and the display.
@@ -884,6 +897,8 @@ export function buildStation(data, mats, registry, loader, gap, content, options
     setHover: setHover,
     /** The visit sign (a click target; null at secret stops) and its hover light. */
     sign: sign,
+    /** The wall's spray layer ({ mesh, width, height }, centred on the poster), or null. */
+    paintLayer: paintLayer,
     setSign: setSign,
     /** A close look at the art at a world point (the phone's tap): a sharp print there; null to undo. */
     sharpen: function (point) { if (takeover) takeover.sharpen(point ? point.x - group.position.x : null); },

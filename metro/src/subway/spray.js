@@ -2,7 +2,9 @@
  * Spray can. With a mouse the cursor is a gloved hand on a Montana GOLD can: hold the button to paint anything
  * in the car except the floor (wall, door frame, seats and their base, poles, windows, the door
  * leaves), and the few signs and ads that are fair game (options.paintable: the 601 tag, the
- * motto sign, the eye of Charles). Over the line map the can steps aside for the normal pointer
+ * motto sign, the eye of Charles). Through the open doors or out on the platform it paints the
+ * station wall too (options.walls: each station's paint layer); out there the Spray toggle shows
+ * with a mouse as well: armed, a drag paints; off, a drag looks round. Over the line map the can steps aside for the normal pointer
  * so a stop can be picked. See-through overlays (acrylic glare, the glass's sheen) don't stop
  * the paint: it lands on what's behind them.
  * On touch, the Spray toggle turns drags from scrolling into painting.
@@ -44,6 +46,8 @@ var BOX_MAX = new THREE.Vector3(4.4, 2.3, 1.0);
 var BOX_SIZE = BOX_MAX.clone().sub(BOX_MIN);
 /** How far (m) a surface may sit from where the paint landed and still show it. */
 var DEPTH_TOLERANCE = 0.04;
+/** Texture pixels per meter on the station walls: a big surface, so a coarser grain. */
+var WALL_PPM = 128;
 /** Pixels between raycasts when a stroke jumps from one surface to another. */
 var SUBSTEP_PX = 4;
 
@@ -121,6 +125,7 @@ export function createSpray(options) {
   /** Meshes (or groups) that take paint even inside a noPaint group; lit or unlit materials. */
   var paintable = options.paintable || [];
   var selecting = options.selecting;
+  var walls = options.walls || [];
   var onHiss = options.onHiss || function () {};
   var fine = options.finePointer;
 
@@ -241,12 +246,41 @@ export function createSpray(options) {
   });
   var targets = [projections.z, projections.y, projections.x].concat(doorLayers);
 
+  // The station walls: a canvas per wall, made on its first stroke.
+  var wallTargets = walls.map(function (w) {
+    var t = {
+      mesh: w.mesh,
+      ppm: WALL_PPM,
+      upright: true,
+      dirty: false,
+      toPx: function (a, b) { return [(a + w.width / 2) * WALL_PPM, (w.height - b) * WALL_PPM]; },
+      ensure: function () {
+        if (t.canvas) return;
+        t.canvas = blankCanvas(w.width * WALL_PPM, w.height * WALL_PPM);
+        t.ctx = t.canvas.getContext('2d');
+        t.tex = canvasTexture(t.canvas, registry);
+        w.mesh.material.map = t.tex;
+        w.mesh.material.needsUpdate = true;
+        w.mesh.visible = true;
+        targets.push(t);
+      },
+      height: w.height
+    };
+    return t;
+  });
+  var wallMeshes = wallTargets.map(function (t) { return t.mesh; });
+  function wallOf(o) {
+    for (var i = 0; i < wallTargets.length; i++) if (wallTargets[i].mesh === o) return wallTargets[i];
+    return null;
+  }
+
   // --- Paint ---------------------------------------------------------------------------
 
   var color = rgb(COLORS[0].hex);
 
   function puff(t, a, b, depth, amount) {
-    var r = NOZZLE * PPM;
+    if (t.ensure) t.ensure();
+    var r = NOZZLE * (t.ppm || PPM);
     var p = t.toPx(a, b);
     var ctx = t.ctx;
     var g = ctx.createRadialGradient(p[0], p[1], 0, p[0], p[1], r * 1.6);
@@ -288,6 +322,7 @@ export function createSpray(options) {
     for (var i = drips.length - 1; i >= 0; i--) {
       var d = drips[i];
       var t = d.target;
+      var ppm = t.ppm || PPM;
       var step = Math.min(d.left, d.v * dt);
       var p = t.toPx(d.a, d.b);
       d.b -= step;
@@ -295,17 +330,17 @@ export function createSpray(options) {
       d.v *= 1 - 0.5 * dt;
       var ctx = t.ctx;
       ctx.strokeStyle = rgba(d.color, 0.9);
-      ctx.lineWidth = d.w * PPM;
+      ctx.lineWidth = d.w * ppm;
       ctx.lineCap = 'round';
       ctx.beginPath();
       ctx.moveTo(p[0], p[1]);
-      ctx.lineTo(p[0], p[1] + step * PPM);
+      ctx.lineTo(p[0], p[1] + step * ppm);
       ctx.stroke();
       // A bead where it stops.
       if (d.left <= 0) {
         ctx.fillStyle = rgba(d.color, 0.9);
         ctx.beginPath();
-        ctx.arc(p[0], p[1] + step * PPM, d.w * PPM * 0.9, 0, Math.PI * 2);
+        ctx.arc(p[0], p[1] + step * ppm, d.w * ppm * 0.9, 0, Math.PI * 2);
         ctx.fill();
       }
       if (t.depthCtx) {
@@ -359,9 +394,16 @@ export function createSpray(options) {
   function aim(at) {
     ray.setFromCamera(at, camera);
     // Through any overlay to the first real surface.
-    var hit = ray.intersectObjects(pickables, true).filter(function (h) { return !overlay(h.object.material); })[0];
+    var hit = ray.intersectObjects(pickables.concat(wallMeshes), true).filter(function (h) { return !overlay(h.object.material); })[0];
     if (!hit || (within(hit.object, noPaint) && !within(hit.object, paintable))) return null;
     var o = hit.object;
+    var wall = wallOf(o);
+    if (wall) {
+      local.copy(hit.point);
+      o.worldToLocal(local);
+      if (local.y + wall.height / 2 < 0.02) return null;                   // not the floor line
+      return { target: wall, a: local.x, b: local.y + wall.height / 2, depth: 0 };
+    }
     var door = leafOf(o);
     if (door) {
       local.copy(hit.point);
@@ -402,7 +444,9 @@ export function createSpray(options) {
   tools.hidden = false;
   tools.classList.toggle('has-mouse', fine);
 
+  /** The Spray toggle: on a touch screen, drags paint; with a mouse it only counts on the platform. */
   var armedTouch = false;
+  var platform = false;
   var hovering = false;
   var painting = false;
   var hissing = false;
@@ -410,7 +454,23 @@ export function createSpray(options) {
   var lastNdc = new THREE.Vector2();
   var wet = 0;
 
-  function armed() { return fine || armedTouch; }
+  function armed() { return (fine && !platform) || armedTouch; }
+  function setArmed(on) {
+    armedTouch = on;
+    toggle.setAttribute('aria-pressed', on ? 'true' : 'false');
+    tools.classList.toggle('is-armed', on);
+    // While armed, a drag on the scene paints instead of scrolling the ride or looking round.
+    canvas.style.touchAction = on ? 'none' : '';
+  }
+  /** Out on the platform (true) or back on the train: a mouse gets the toggle there, armed to start. */
+  function setPlatform(on) {
+    if (on === platform) return;
+    platform = on;
+    tools.classList.toggle('on-platform', on);
+    if (fine) setArmed(on);
+    if (!on) painting = false;
+    refresh();
+  }
 
   function refresh() {
     var away = selecting().onMap && !painting;
@@ -471,13 +531,7 @@ export function createSpray(options) {
   });
   pick(0);
 
-  toggle.addEventListener('click', function () {
-    armedTouch = !armedTouch;
-    toggle.setAttribute('aria-pressed', armedTouch ? 'true' : 'false');
-    tools.classList.toggle('is-armed', armedTouch);
-    // While armed, a drag on the scene paints instead of scrolling the ride.
-    canvas.style.touchAction = armedTouch ? 'none' : '';
-  });
+  toggle.addEventListener('click', function () { setArmed(!armedTouch); refresh(); });
   tools.querySelector('[data-buff]').addEventListener('click', buff);
 
   // --- Frame ---------------------------------------------------------------------------
@@ -547,6 +601,8 @@ export function createSpray(options) {
     buff: buff,
     /** On touch, the Spray toggle is on: drags paint instead of riding. */
     touchArmed: function () { return armedTouch; },
+    /** Out on the platform (true) or back on the train. */
+    setPlatform: setPlatform,
     dispose: dispose
   };
 }
