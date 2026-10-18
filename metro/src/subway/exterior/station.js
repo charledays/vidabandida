@@ -438,8 +438,13 @@ var STATION_TAGS = {
   'shop': ['fabrika', 'vdba', 'inkfame', '601', 'charlesdays', 'criterio-amarillo'],
   'og-bandit': ['dev', 'firma-roja', 'criterio-blanco', 'jueves-deskillz-baluga', 'vdba', 'fabrika'],
   'featured': ['inkfame', 'firma-blanca', '601', 'dev', 'charlesdays'],
-  'filosofia': ['criterio-amarillo', 'firma-roja', 'jueves-deskillz-baluga', 'criterio-blanco', 'firma-blanca']
+  'filosofia': ['criterio-amarillo', 'firma-roja', 'jueves-deskillz-baluga', 'criterio-blanco', 'firma-blanca'],
+  // The secret stop is tagged end to end: every tag, twice, packed tight (TAG_DENSE).
+  'bandidaje-fino': ['fabrika', 'criterio-amarillo', 'dev', 'firma-roja', 'inkfame', 'vdba', '601', 'charlesdays',
+    'jueves-deskillz-baluga', 'criterio-blanco', 'firma-blanca', 'vdba', 'inkfame', 'fabrika', 'firma-roja',
+    'charlesdays', '601', 'dev', 'criterio-blanco', 'firma-blanca', 'criterio-amarillo', 'jueves-deskillz-baluga']
 };
+var TAG_DENSE = { 'bandidaje-fino': true };
 /** Tags that are also links (main.js opens them on a still click). */
 var TAG_LINKS = {
   'criterio-blanco': 'https://www.hechoconcriterio.com',
@@ -455,13 +460,20 @@ function wallTags(data, loader, keep, track) {
   var list = STATION_TAGS[data.id];
   if (!list) return group;
   var rand = rng(data.id.charCodeAt(0) * 97 + data.id.length * 13);
-  var reach = [0.85, 0.85];                                              // next free x on the right / left of the poster
+  var dense = !!TAG_DENSE[data.id];
+  // Next free x on the right / left of the poster; a dense wall has two rows of them (low, high).
+  var reach = dense ? [[0.75, 0.75], [0.75, 0.75]] : [[0.85, 0.85]];
+  var BANDS = dense ? [[0.3, 1.15], [1.1, 1.95]] : [[TAG_LOW, TAG_HIGH]];
   list.forEach(function (id, i) {
     var aspect = TAGS[id], src = VB + 'tag-' + id + '.webp';
-    var w = Math.min(TAG_MAX_W, TAG_MAX_H * aspect) * (0.6 + rand() * 0.4), h = w / aspect;
     var side = i % 2;                                                    // alternate right, left
-    var cx = reach[side] + w / 2 + rand() * 0.5;
-    reach[side] = cx + w / 2 + 0.5 + rand() * 0.9;
+    var row = dense ? (i >> 1) % 2 : 0;
+    var band = BANDS[row];
+    var w = Math.min(TAG_MAX_W, TAG_MAX_H * aspect) * (dense ? 0.42 + rand() * 0.25 : 0.6 + rand() * 0.4);
+    w = Math.min(w, (band[1] - band[0]) * aspect);                       // fits its row
+    var h = w / aspect;
+    var cx = reach[row][side] + w / 2 + rand() * (dense ? 0.12 : 0.5);
+    reach[row][side] = cx + w / 2 + (dense ? 0.03 + rand() * 0.25 : 0.5 + rand() * 0.9);
     if (!tagMats[src]) {
       // Low alphaTest: the marker strokes are see-through where they overlap; keep that.
       var mat = track(new THREE.MeshStandardMaterial({ transparent: true, alphaTest: 0.02, roughness: 0.55, depthWrite: false }));
@@ -469,7 +481,8 @@ function wallTags(data, loader, keep, track) {
       tagMats[src] = mat;
     }
     var mesh = new THREE.Mesh(keep(new THREE.PlaneGeometry(w, h)), tagMats[src]);
-    mesh.position.set(side ? -cx : cx, TAG_LOW + h / 2 + rand() * (TAG_HIGH - TAG_LOW - h), WORLD.station.wallZ + 0.006 + i * 0.0005);
+    // Stacked just off the tiles, all under the spray layer (+0.0095) and the poster.
+    mesh.position.set(side ? -cx : cx, band[0] + h / 2 + rand() * Math.max(0, band[1] - band[0] - h), WORLD.station.wallZ + 0.006 + (i % 10) * 0.0003);
     mesh.rotation.z = (rand() - 0.5) * 0.12;
     if (TAG_LINKS[id]) mesh.userData.link = TAG_LINKS[id];
     group.add(mesh);
@@ -728,7 +741,7 @@ export function buildStation(data, mats, registry, loader, gap, content, options
   var sign = null;
   var lit = 0;
   var posterMat = null;
-  if (!data.secret && data.href && data.poster) {
+  if (data.href && data.poster) {
     var PW = 1.02, PH = 1.36;
     var pgeo = keep(new THREE.PlaneGeometry(PW, PH, 14, 18));
     var pos = pgeo.attributes.position, prand = rng(data.id.length * 131 + 7);
@@ -903,7 +916,7 @@ export function buildStation(data, mats, registry, loader, gap, content, options
     hero: art,
     heroSize: B,
     setHover: setHover,
-    /** The visit sign (a click target; null at secret stops) and its hover light. */
+    /** The visit sign (a click target at the line's stops; at a secret stop it's just the offer) and its hover light. */
     sign: sign,
     /** The wall's spray layer ({ mesh, width, height }, centred on the poster), or null. */
     paintLayer: paintLayer,

@@ -14,7 +14,7 @@
  */
 import * as THREE from 'three';
 import { CAR, WORLD, LEG, CRUISE_SPEED, START, START_CLOSED, DOOR_WALK } from './config.js';
-import { stations, mapStops, adArt, bandidajeFino } from './stations.js?v=20261019';
+import { stations, mapStops, adArt, bandidajeFino } from './stations.js?v=20261019b';
 import { createTimeline } from './timeline.js';
 import { createScroll } from './scroll.js';
 import { createJourney } from './journey.js';
@@ -28,7 +28,7 @@ import { createLighting } from './carriage/lighting.js';
 import { createLineMap } from './carriage/line-map.js';
 import { createAdStrip, createPanelAd } from './carriage/ad-strip.js';
 import { createTunnel } from './exterior/tunnel.js';
-import { buildStation } from './exterior/station.js?v=20261019d';
+import { buildStation } from './exterior/station.js?v=20261019f';
 import { createCameraRig } from './camera-rig.js';
 import { createAudio } from './audio.js';
 import { createUI } from './ui.js?v=20261019';
