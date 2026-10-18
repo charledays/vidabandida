@@ -26,5 +26,31 @@ export var stations = [
   { id: 'filosofia', name: 'Filosofía', note: 'Bandidaje fino', href: '/shop/#filosofia', poster: V + 'pasteup-filosofia.webp' }
 ];
 
+/**
+ * Secret stop, behind the "Bandidaje Fino" sign over the seated panda (a still click there rides
+ * the train on to the next stop, dressed as this one): the calligraphy canvas floor to ceiling,
+ * sheet after sheet, and the offer pasted up in the doorway's view. The 20% is honoured by hand
+ * when the order is confirmed on WhatsApp: the code plus a screenshot of this wall.
+ */
+export var bandidajeFino = {
+  id: 'bandidaje-fino',
+  name: 'Bandidaje Fino',
+  note: '20% en tu próxima compra',
+  href: '/shop/',
+  secret: true,
+  takeover: {
+    wall: 'wallpaper',
+    images: [V + 'lienzo-caligrafia.webp'],
+    pattern: true,
+    deal: {
+      kicker: 'Parada secreta',
+      title: ['Bandidaje', 'fino.'],
+      offer: '20% OFF',
+      terms: ['en tu próxima compra', 'código BANDIDAJEFINO20'],
+      proof: ['Haz captura de esta pared.', 'Menciona el código al ordenar.']
+    }
+  }
+};
+
 /** The line map's stops are the stations themselves, so the map and the ride always agree. */
 export var mapStops = stations;

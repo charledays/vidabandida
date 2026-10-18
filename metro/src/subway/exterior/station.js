@@ -8,7 +8,7 @@ import * as THREE from 'three';
 import { WORLD, CAR, WORDMARK } from '../config.js';
 import { LINE } from '../stations.js?v=20261018';
 import { tracker, textCanvas, canvasTexture, frameGeometry } from '../geo.js';
-import { createTakeover, TAKEOVER } from './takeover.js';
+import { createTakeover, TAKEOVER } from './takeover.js?v=20261019';
 import { rng } from '../materials.js';
 
 var SIGN_FONT = '"Helvetica Neue", Helvetica, Arial, sans-serif';

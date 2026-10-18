@@ -14,7 +14,7 @@
  */
 import * as THREE from 'three';
 import { CAR, WORLD, LEG, CRUISE_SPEED, START, START_CLOSED, DOOR_WALK } from './config.js';
-import { stations, mapStops, adArt } from './stations.js?v=20261018';
+import { stations, mapStops, adArt, bandidajeFino } from './stations.js?v=20261019';
 import { createTimeline } from './timeline.js';
 import { createScroll } from './scroll.js';
 import { createJourney } from './journey.js';
@@ -28,7 +28,7 @@ import { createLighting } from './carriage/lighting.js';
 import { createLineMap } from './carriage/line-map.js';
 import { createAdStrip, createPanelAd } from './carriage/ad-strip.js';
 import { createTunnel } from './exterior/tunnel.js';
-import { buildStation } from './exterior/station.js?v=20261019c';
+import { buildStation } from './exterior/station.js?v=20261019d';
 import { createCameraRig } from './camera-rig.js';
 import { createAudio } from './audio.js';
 import { createUI } from './ui.js?v=20261019';
@@ -138,7 +138,7 @@ function start() {
   stationViews.forEach(function (v) { scene.add(v.group); });
   // Secret stops stand in for a real one while a secret ride is on (see tick).
   var secretViews = {};
-  [].forEach(function (s) {
+  [bandidajeFino].forEach(function (s) {
     var v = buildStation(s, mats, registry, loader, timeline.gap, stationContent(s), { coarse: !finePointer });
     v.group.visible = false;
     scene.add(v.group);
@@ -255,16 +255,19 @@ function start() {
     try { sessionStorage.removeItem(BACK_KEY); } catch (err) { /* private mode */ }
   });
   /**
-   * Secret doors: the eye of Charles (to Easter Egg) and the word "Criterio" on the motto sign
-   * over the window (to Aragua). A click rides the train to the next station, which is dressed
-   * as the secret stop until the train has pulled away from it again.
+   * Secret doors: the "Bandidaje Fino" sign over the window, above the seated panda (to the
+   * Bandidaje Fino stop and its 20% off). A click rides the train to the next station, which is
+   * dressed as the secret stop until the train has pulled away from it again.
    */
   var secret = null;
   var eye = { hover: false };
   var detachEye = (function () {
     var ray = new THREE.Raycaster();
     var ndc = new THREE.Vector2();
-    var doors = [];                                                    // no secret stops on this line (yet)
+    // The "Bandidaje Fino" sign over the seated panda: the whole sign is the door.
+    var doors = [
+      { stop: bandidajeFino, mesh: signage.motto.mesh, hits: function () { return true; } }
+    ];
     function over(e) {
       var rect = canvas.getBoundingClientRect();
       ndc.set(((e.clientX - rect.left) / rect.width) * 2 - 1, -((e.clientY - rect.top) / rect.height) * 2 + 1);

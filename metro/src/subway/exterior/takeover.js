@@ -508,7 +508,7 @@ export function createTakeover(station, content, mats, registry, options) {
     ctx.beginPath();
     ctx.arc(w / 2, by, br, 0, Math.PI * 2);
     ctx.fill();
-    line('C', by + br * 0.38, br * 1.1, 800, '#111');
+    line('V', by + br * 0.38, br * 1.1, 800, '#111');
     line(d.kicker, h * 0.2, w * 0.035, 700, orange, 0.22);
     // The headline.
     d.title.forEach(function (t, i) { line(t, h * 0.28 + i * w * 0.115, w * 0.105, 800, ink); });
