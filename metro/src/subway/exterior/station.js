@@ -445,12 +445,11 @@ var STATION_TAGS = {
     'charlesdays', '601', 'dev', 'criterio-blanco', 'firma-blanca', 'criterio-amarillo', 'jueves-deskillz-baluga']
 };
 var TAG_DENSE = { 'bandidaje-fino': true };
-/** Tags that are also links (main.js opens them on a still click). */
+/** Wall tags that are also links (main.js opens them on a still click): only CRITERIO. The
+ * CHARLES DAYS and DEV links live on the bench base in the car (carriage/signage.js). */
 var TAG_LINKS = {
   'criterio-blanco': 'https://www.hechoconcriterio.com',
-  'criterio-amarillo': 'https://www.hechoconcriterio.com',
-  'charlesdays': 'https://www.charlesdays.art',
-  'dev': 'https://www.devinosor.io'
+  'criterio-amarillo': 'https://www.hechoconcriterio.com'
 };
 var TAG_MAX_W = 0.95, TAG_MAX_H = 1.2;                                     // paste-up is 1.02 x 1.36
 var TAG_LOW = 0.35, TAG_HIGH = 1.95;                                     // under the name tablets

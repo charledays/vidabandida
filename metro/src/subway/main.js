@@ -28,7 +28,7 @@ import { createLighting } from './carriage/lighting.js';
 import { createLineMap } from './carriage/line-map.js';
 import { createAdStrip, createPanelAd } from './carriage/ad-strip.js';
 import { createTunnel } from './exterior/tunnel.js';
-import { buildStation } from './exterior/station.js?v=20261019f';
+import { buildStation } from './exterior/station.js?v=20261020';
 import { createCameraRig } from './camera-rig.js';
 import { createAudio } from './audio.js';
 import { createUI } from './ui.js?v=20261020';
