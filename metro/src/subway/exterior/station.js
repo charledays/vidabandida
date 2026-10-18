@@ -422,33 +422,50 @@ function visitTabTexture(registry, w, h) {
  * station's resolved takeover (content.js), or null for a plain station.
  */
 /**
- * Tags on the tiles (PNG artwork listed in TAGS), scattered along the wall either side of
- * the poster, at hand height (under the name tablets). Seeded per station, so they stay put.
+ * Tags on the tiles, either side of the paste-up, at hand height (under the name tablets).
+ * TAGS is the artwork (transparent WebP; aspect = width / height). STATION_TAGS hands each
+ * station its own few, so every tag shows up at most twice along the whole line. None is ever
+ * bigger than the paste-up (PW x PH below). Seeded per station, so they stay put. Positions are
+ * relative to the poster; setViewpoint moves the group with it.
  */
-var TAGS = [];                                                           // the tag artwork (PNGs) comes later
+var VB = '/metro/images/web/vb/';
+var TAGS = {
+  'fabrika': 1.277, 'dev': 1.400, 'vdba': 2.522, 'firma-roja': 1.347, 'firma-blanca': 1.347,
+  'inkfame': 1.766, 'criterio-blanco': 1.914, '601': 1.110, 'jueves-deskillz-baluga': 0.950,
+  'criterio-amarillo': 1.573, 'charlesdays': 2.241
+};
+var STATION_TAGS = {
+  'shop': ['fabrika', 'vdba', 'inkfame', '601', 'charlesdays', 'criterio-amarillo'],
+  'og-bandit': ['dev', 'firma-roja', 'criterio-blanco', 'jueves-deskillz-baluga', 'vdba', 'fabrika'],
+  'featured': ['inkfame', 'firma-blanca', '601', 'dev', 'charlesdays'],
+  'filosofia': ['criterio-amarillo', 'firma-roja', 'jueves-deskillz-baluga', 'criterio-blanco', 'firma-blanca']
+};
+var TAG_MAX_W = 0.95, TAG_MAX_H = 1.2;                                     // paste-up is 1.02 x 1.36
+var TAG_LOW = 0.35, TAG_HIGH = 1.95;                                     // under the name tablets
 var tagMats = {};
 function wallTags(data, loader, keep, track) {
   var group = new THREE.Group();
-  if (!TAGS.length) return group;
+  var list = STATION_TAGS[data.id];
+  if (!list) return group;
   var rand = rng(data.id.charCodeAt(0) * 97 + data.id.length * 13);
-  var x = -18 + rand() * 2;
-  while (x < 18) {
-    var spec = TAGS[Math.floor(rand() * TAGS.length)];
-    var h = spec.h * (0.8 + rand() * 0.5), w = h * spec.aspect;
-    var cx = x + w / 2;
-    // Keep the poster (x = 0) clear.
-    if (Math.abs(cx) < 0.6 + w / 2) { x = 0.65; continue; }
-    if (!tagMats[spec.src]) {
-      var mat = track(new THREE.MeshStandardMaterial({ transparent: true, alphaTest: 0.25, roughness: 0.55, depthWrite: false }));
-      loader.load(spec.src, function (m) { return function (tex) { tex.colorSpace = THREE.SRGBColorSpace; m.map = tex; m.needsUpdate = true; }; }(mat));
-      tagMats[spec.src] = mat;
+  var reach = [0.85, 0.85];                                              // next free x on the right / left of the poster
+  list.forEach(function (id, i) {
+    var aspect = TAGS[id], src = VB + 'tag-' + id + '.webp';
+    var w = Math.min(TAG_MAX_W, TAG_MAX_H * aspect) * (0.6 + rand() * 0.4), h = w / aspect;
+    var side = i % 2;                                                    // alternate right, left
+    var cx = reach[side] + w / 2 + rand() * 0.5;
+    reach[side] = cx + w / 2 + 0.5 + rand() * 0.9;
+    if (!tagMats[src]) {
+      // Low alphaTest: the marker strokes are see-through where they overlap; keep that.
+      var mat = track(new THREE.MeshStandardMaterial({ transparent: true, alphaTest: 0.02, roughness: 0.55, depthWrite: false }));
+      loader.load(src, function (m) { return function (tex) { tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 4; m.map = tex; m.needsUpdate = true; }; }(mat));
+      tagMats[src] = mat;
     }
-    var mesh = new THREE.Mesh(keep(new THREE.PlaneGeometry(w, h)), tagMats[spec.src]);
-    mesh.position.set(cx, 0.45 + rand() * 1.35, WORLD.station.wallZ + 0.006 + rand() * 0.002);
+    var mesh = new THREE.Mesh(keep(new THREE.PlaneGeometry(w, h)), tagMats[src]);
+    mesh.position.set(side ? -cx : cx, TAG_LOW + h / 2 + rand() * (TAG_HIGH - TAG_LOW - h), WORLD.station.wallZ + 0.006 + i * 0.0005);
     mesh.rotation.z = (rand() - 0.5) * 0.12;
     group.add(mesh);
-    x += w + 0.4 + rand() * 1.6;
-  }
+  });
   return group;
 }
 
@@ -508,7 +525,8 @@ export function buildStation(data, mats, registry, loader, gap, content, options
   var wall = new THREE.Mesh(keep(new THREE.PlaneGeometry(len, S.ceilingY)), tileMat);
   wall.position.set(0, S.ceilingY / 2, S.wallZ);
   group.add(wall);
-  if (!content) group.add(wallTags(data, loader, keep, track));
+  var tagGroup = content ? null : wallTags(data, loader, keep, track);
+  if (tagGroup) group.add(tagGroup);
 
   // Station identity (frieze, name tablets, hanging signs) only where there's no takeover: a
   // taken-over stop gives that wall to the work, and its name stays on the map and the display.
@@ -790,6 +808,7 @@ export function buildStation(data, mats, registry, loader, gap, content, options
     board.position.x = boardX;
     // The paste-up dead centre in the open doors too, so it's right there to click from the seat.
     if (sign) placePoster(boardX);
+    if (tagGroup) tagGroup.position.x = boardX;                       // the tags flank the poster
     var clearHalf = B.width / 2 + 0.45;
 
     var windowX = sightAt(camX, camZ, (CAR.window.x0 + CAR.window.x1) / 2, S.wallZ);
