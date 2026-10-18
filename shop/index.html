@@ -317,6 +317,16 @@ footer{border-top:1px solid var(--border);padding:2.5rem;display:grid;grid-templ
 @media (max-width:768px){.og-cta{padding:12px 1.25rem;gap:10px}}
 /* narrow screens: one compact line, sized to its column */
 @media (max-width:560px){.og-cta-text strong{font-size:min(44px,17cqw)}}
+
+/* The page sits on the calligraphy canvas, darkened (the same image as the OG BANDIT dresser):
+   a fixed layer behind everything, so titles, products and text all read on it. The hero keeps
+   its own photo over it; the sections themselves are see-through. */
+body::before{content:"";position:fixed;inset:0;z-index:-1;background:#0e0e0e url("/og-bandit/fondo-caligrafia.webp") center/cover no-repeat;pointer-events:none}
+.filosofia{background:transparent}
+/* The sign-off, centred under everything: "Hecho con criterio", criterio links to its site. */
+.footer-credit{display:block;margin:0;padding:0 1.25rem 1.6rem;text-align:center}
+.footer-credit a{color:inherit;text-decoration:underline;text-underline-offset:3px;transition:color .15s}
+.footer-credit a:hover{color:var(--cream)}
 </style>
 <!--/OGB:HEAD-->
 <script src="/analytics.js"></script>
@@ -475,6 +485,7 @@ if (gltf && cta) {
   <span class="footer-bottom-text">Vidabandida — Lima, Perú</span>
   <span class="footer-bottom-text">Bandidaje Fino</span>
 </div>
+<p class="footer-bottom-text footer-credit">Hecho con <a href="https://www.hechoconcriterio.com" target="_blank" rel="noopener">criterio</a></p>
 
 
 <!-- CART FAB -->
