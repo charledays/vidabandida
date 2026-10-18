@@ -440,6 +440,13 @@ var STATION_TAGS = {
   'featured': ['inkfame', 'firma-blanca', '601', 'dev', 'charlesdays'],
   'filosofia': ['criterio-amarillo', 'firma-roja', 'jueves-deskillz-baluga', 'criterio-blanco', 'firma-blanca']
 };
+/** Tags that are also links (main.js opens them on a still click). */
+var TAG_LINKS = {
+  'criterio-blanco': 'https://www.hechoconcriterio.com',
+  'criterio-amarillo': 'https://www.hechoconcriterio.com',
+  'charlesdays': 'https://www.charlesdays.art',
+  'dev': 'https://www.devinosor.io'
+};
 var TAG_MAX_W = 0.95, TAG_MAX_H = 1.2;                                     // paste-up is 1.02 x 1.36
 var TAG_LOW = 0.35, TAG_HIGH = 1.95;                                     // under the name tablets
 var tagMats = {};
@@ -464,6 +471,7 @@ function wallTags(data, loader, keep, track) {
     var mesh = new THREE.Mesh(keep(new THREE.PlaneGeometry(w, h)), tagMats[src]);
     mesh.position.set(side ? -cx : cx, TAG_LOW + h / 2 + rand() * (TAG_HIGH - TAG_LOW - h), WORLD.station.wallZ + 0.006 + i * 0.0005);
     mesh.rotation.z = (rand() - 0.5) * 0.12;
+    if (TAG_LINKS[id]) mesh.userData.link = TAG_LINKS[id];
     group.add(mesh);
   });
   return group;
@@ -899,6 +907,8 @@ export function buildStation(data, mats, registry, loader, gap, content, options
     sign: sign,
     /** The wall's spray layer ({ mesh, width, height }, centred on the poster), or null. */
     paintLayer: paintLayer,
+    /** The wall tags that are links (mesh.userData.link). */
+    linkTags: tagGroup ? tagGroup.children.filter(function (o) { return o.userData.link; }) : [],
     setSign: setSign,
     /** A close look at the art at a world point (the phone's tap): a sharp print there; null to undo. */
     sharpen: function (point) { if (takeover) takeover.sharpen(point ? point.x - group.position.x : null); },

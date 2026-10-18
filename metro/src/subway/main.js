@@ -23,12 +23,12 @@ import { createMaterials } from './materials.js';
 import { createDoors } from './carriage/doors.js';
 import { createShell } from './carriage/shell.js';
 import { createSeats } from './carriage/seats.js';
-import { createSignage } from './carriage/signage.js';
+import { createSignage } from './carriage/signage.js?v=20261019c';
 import { createLighting } from './carriage/lighting.js';
 import { createLineMap } from './carriage/line-map.js';
 import { createAdStrip, createPanelAd } from './carriage/ad-strip.js';
 import { createTunnel } from './exterior/tunnel.js';
-import { buildStation } from './exterior/station.js?v=20261019';
+import { buildStation } from './exterior/station.js?v=20261019c';
 import { createCameraRig } from './camera-rig.js';
 import { createAudio } from './audio.js';
 import { createUI } from './ui.js?v=20261019';
@@ -311,6 +311,79 @@ function start() {
   })();
 
   /**
+   * Linked tags: CRITERIO (hechoconcriterio.com) and CHARLES DAYS (charlesdays.art), on the bench
+   * base and on the station walls (userData.link). Like the secret doors they take paint: a press
+   * that moves is a spray stroke, only a still click (or tap) on the paint itself opens the link,
+   * in a new tab. The car's walls, seats and doors stand in the way like anything solid.
+   */
+  var tagLinks = (function () {
+    var ray = new THREE.Raycaster();
+    var ndc = new THREE.Vector2();
+    var benchTags = signage.tags.filter(function (m) { return m.userData.link; });
+    var blockers = [shell.group, seats.group, doors.group];
+    function candidates() {
+      var view = currentView();
+      return view && view.linkTags ? benchTags.concat(view.linkTags) : benchTags;
+    }
+    /** Is there paint at this point of the tag's image (some grace round the thin strokes, so a click near a letter counts)? */
+    function inked(mesh, uv) {
+      var map = mesh.material.map;
+      if (!map || !map.image || !uv) return false;
+      var img = map.image;
+      if (!map.userData.alpha) {
+        var c = document.createElement('canvas');
+        c.width = img.width;
+        c.height = img.height;
+        var ctx = c.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+        map.userData.alpha = { w: c.width, h: c.height, data: ctx.getImageData(0, 0, c.width, c.height).data };
+      }
+      var a = map.userData.alpha;
+      var cx = Math.round(uv.x * (a.w - 1)), cy = Math.round((1 - uv.y) * (a.h - 1)), r = Math.max(6, Math.round(a.w * 0.045));
+      for (var y = Math.max(0, cy - r); y <= Math.min(a.h - 1, cy + r); y += 2) {
+        for (var x = Math.max(0, cx - r); x <= Math.min(a.w - 1, cx + r); x += 2) {
+          if (a.data[(y * a.w + x) * 4 + 3] > 60) return true;
+        }
+      }
+      return false;
+    }
+    function over(e) {
+      if (busy) return null;
+      var tags = candidates();
+      if (!tags.length) return null;
+      var rect = canvas.getBoundingClientRect();
+      ndc.set(((e.clientX - rect.left) / rect.width) * 2 - 1, -((e.clientY - rect.top) / rect.height) * 2 + 1);
+      ray.setFromCamera(ndc, camera);
+      var hits = ray.intersectObjects(tags.concat(blockers), true);
+      for (var i = 0; i < hits.length; i++) {
+        var o = hits[i].object;
+        if (tags.indexOf(o) >= 0) {
+          if (inked(o, hits[i].uv)) return o.userData.link;
+          continue;                                                  // through the clear part of the tag
+        }
+        // See-through layers (glare, sheen) don't stop the click; anything solid does.
+        var m = o.material;
+        if (m && m.transparent && m.depthWrite === false) continue;
+        return null;
+      }
+      return null;
+    }
+    var downAt = null;
+    function onDown(e) { downAt = { x: e.clientX, y: e.clientY, link: over(e) }; }
+    function onClick(e) {
+      var still = downAt && Math.abs(e.clientX - downAt.x) + Math.abs(e.clientY - downAt.y) < 8;
+      var link = still && downAt.link && over(e);
+      downAt = null;
+      if (!link) return;
+      if (window.vbTrack) window.vbTrack('metro_tag_link', { link: link });
+      window.open(link, '_blank', 'noopener');
+    }
+    canvas.addEventListener('pointerdown', onDown);
+    canvas.addEventListener('click', onClick);
+    return { over: over };
+  })();
+
+  /**
    * The open doorway as a click target: an invisible plane filling the door opening, plus the
    * hero piece behind it. Live only while the train stands with both leaves fully open and
    * nothing else is running; hovering lifts the hero. A click there, or the flashing "Step out"
@@ -569,6 +642,7 @@ function start() {
     function onDown(e) { onMove(e); pressed = self.hover; }
     function onClick(e) {
       if (overShut(e) && openDoors()) { pressed = false; return; }
+      if (tagLinks.over(e)) { pressed = false; return; }
       // Seen through the doorway, the visit sign takes the click.
       if (pressed && !busy && !visit.hover && over(e)) { stepOntoPlatform(); self.set(false); }
       pressed = false;
@@ -716,7 +790,7 @@ function start() {
       walk.artHover = !!(view && artAt(e, view));
     }
     function onClick(e) {
-      if (!standing() || visit.over(e) || spray.touchArmed()) return;      // armed, a click is a dot of paint
+      if (!standing() || visit.over(e) || spray.touchArmed() || tagLinks.over(e)) return;   // armed, a click is a dot of paint
       if (e.pointerType !== 'touch' && down && Math.abs(e.clientX - down.x) + Math.abs(e.clientY - down.y) > 6) return;
       if (walk.inspectTo) {
         walk.inspectTo = 0;

@@ -194,7 +194,26 @@ export function createSignage(mats, registry, shell, stations) {
     });
   }
 
-  // The bench base stays bare until the "bandidaje fino 24" tag artwork arrives.
+  // Quick tags on the front of the bench base, under the seats across from you: a black CRITERIO
+  // right under the seated panda, CHARLES DAYS in white marker beside it and a small yellow DEV
+  // hit off to the left, crooked and overlapping, done in a hurry. All three are
+  // links (userData.link; main.js opens them on a still click).
+  var baseFront = CAR.seat.depth - 0.05 + 0.002;
+  loadTag('/metro/images/web/vb/tag-criterio-negro.webp', 1.572, 0.4, function (mesh) {
+    mesh.position.set(CAR.seat.x0 + 0.58, 0.17, baseFront);
+    mesh.rotation.z = -0.05;
+    mesh.userData.link = 'https://www.hechoconcriterio.com';
+  });
+  loadTag('/metro/images/web/vb/tag-charlesdays.webp', 2.241, 0.44, function (mesh) {
+    mesh.position.set(CAR.seat.x0 + 0.95, 0.27, baseFront + 0.0015);
+    mesh.rotation.z = 0.07;
+    mesh.userData.link = 'https://www.charlesdays.art';
+  });
+  loadTag('/metro/images/web/vb/tag-dev-amarillo.webp', 1.4, 0.17, function (mesh) {
+    mesh.position.set(CAR.seat.x0 + 0.2, 0.27, baseFront + 0.001);
+    mesh.rotation.z = -0.16;
+    mesh.userData.link = 'https://www.devinosor.io';
+  });
 
   function update(state) {
     var station = state.station || stations[state.stationIndex];
