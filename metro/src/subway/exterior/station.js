@@ -6,7 +6,7 @@
  */
 import * as THREE from 'three';
 import { WORLD, CAR, WORDMARK } from '../config.js';
-import { LINE } from '../stations.js';
+import { LINE } from '../stations.js?v=20261018';
 import { tracker, textCanvas, canvasTexture, frameGeometry } from '../geo.js';
 import { createTakeover, TAKEOVER } from './takeover.js';
 import { rng } from '../materials.js';

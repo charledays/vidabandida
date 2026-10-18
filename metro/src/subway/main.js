@@ -13,7 +13,7 @@
  */
 import * as THREE from 'three';
 import { CAR, WORLD, LEG, CRUISE_SPEED, START, START_CLOSED, DOOR_WALK } from './config.js';
-import { stations, mapStops, adArt } from './stations.js';
+import { stations, mapStops, adArt } from './stations.js?v=20261018';
 import { createTimeline } from './timeline.js';
 import { createScroll } from './scroll.js';
 import { createJourney } from './journey.js';

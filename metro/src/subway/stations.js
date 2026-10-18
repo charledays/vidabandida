@@ -22,7 +22,7 @@ export var adArt = [
 export var stations = [
   { id: 'shop', name: 'VIDABANDIDA Shop', note: 'Catálogo', href: '/shop/', poster: V + 'pasteup-shop.webp' },
   { id: 'og-bandit', name: 'OG Bandit', note: 'Personaliza tu OG BANDIT', href: '/og-bandit/', poster: V + 'pasteup-og-bandit.webp' },
-  { id: 'featured', name: 'Featured', note: 'Collabs', href: '/shop/#catalogo', poster: V + 'pasteup-featured.webp' },
+  { id: 'featured', name: 'Featured', note: 'Collabs', href: '/shop/', poster: V + 'pasteup-featured.webp' },
   { id: 'filosofia', name: 'Filosofía', note: 'Bandidaje fino', href: '/shop/#filosofia', poster: V + 'pasteup-filosofia.webp' }
 ];
 

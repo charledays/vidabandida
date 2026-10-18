@@ -5,7 +5,7 @@
  */
 import * as THREE from 'three';
 import { CAR } from '../config.js';
-import { LINE } from '../stations.js';
+import { LINE } from '../stations.js?v=20261018';
 import { textCanvas, canvasTexture, tracker, frameGeometry } from '../geo.js';
 import { rng } from '../materials.js';
 

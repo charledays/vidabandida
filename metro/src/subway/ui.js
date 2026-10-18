@@ -5,7 +5,7 @@
  * Step in footprints, the scroll hint and the dip. Reads timeline state; writes to the DOM only
  * when values change.
  */
-import { LINE } from './stations.js';
+import { LINE } from './stations.js?v=20261018';
 
 export function createUI(root, stations, links, handlers) {
   var el = {

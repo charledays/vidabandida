@@ -17,7 +17,7 @@
 import * as THREE from 'three';
 import { CAR } from './config.js';
 import { tracker, canvasTexture } from './geo.js';
-import { LINE } from './stations.js';
+import { LINE } from './stations.js?v=20261018';
 
 export var COLORS = [
   { name: 'Line orange', hex: LINE.color },
