@@ -250,8 +250,8 @@ function start() {
     };
   }
   /**
-   * On the walk out, half a second after setting off down the platform, the loading panda fades
-   * in over the walk, turning, and stays through the dip to black: the section's own loading
+   * On the walk out, once the turn is done and the walk runs straight down the platform, the
+   * loading panda fades in over it, turning, and stays through the dip to black: the section's own loading
    * screen has it in the same place, so there's one wait, not two.
    */
   var exitToy = { el: document.querySelector('[data-exit-toy]'), spin: null };
@@ -1232,7 +1232,7 @@ function start() {
     if (exit && exit.platform) {
       var pt = (performance.now() - exit.t0) / 1000;
       var pp = platformExitPose(pt, exit);
-      if (reduceMotion || pt >= PLATFORM_EXIT.walk0 + 0.5) showExitToy(true);
+      if (reduceMotion || pt >= PLATFORM_EXIT.turn1 + 0.2) showExitToy(true);
       rig.setDoor(pp.door);
       rig.setLook(pp.yaw);
       rig.setSpot(pp.along);
@@ -1243,7 +1243,7 @@ function start() {
     } else if (exit) {
       var et = (performance.now() - exit.t0) / 1000;
       var ep = exitPose(et);
-      if (reduceMotion || et >= EXIT.walk0 + 0.5) showExitToy(true);
+      if (reduceMotion || et >= EXIT.turn1 + 0.15) showExitToy(true);
       rig.setDoor(ep.door);
       rig.setLook(ep.yaw);
       rig.setSpot(ep.along);
