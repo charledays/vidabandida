@@ -302,6 +302,7 @@ footer{border-top:1px solid var(--border);padding:2.5rem;display:grid;grid-templ
   "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
 } }
 </script>
+<script type="module" src="/loader.js?v=20261019"></script>
 <style>
 /* OG BANDIT: the way into the dress-up under the hero (the black toy with a "?" for a face).
    A slim band, so the end of the hero, this and the start of the catalogue fit on one screen. */
@@ -328,11 +329,20 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;background:#0e0e0e url
 /* criterio stands out: full cream, a touch bolder, the line's orange underline. */
 .footer-credit a{color:var(--cream);font-weight:500;text-decoration:underline;text-decoration-color:var(--accent);text-underline-offset:3px;transition:color .15s}
 .footer-credit a:hover{color:var(--accent)}
+/* Loading: the black OG BANDIT turning on black (/loader.js), the same on every page; it leaves softly. */
+.vb-loader{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;background:#050505;transition:opacity .85s cubic-bezier(.4,0,.2,1),visibility 0s linear .85s}
+.vb-loader::before{content:"";position:absolute;width:min(40vw,190px);aspect-ratio:1;border-radius:50%;background:radial-gradient(closest-side,rgba(240,235,225,.07),rgba(240,235,225,0));pointer-events:none}
+.vb-loader canvas{position:relative;width:min(26vw,110px);height:min(18svh,132px);display:block;transition:transform .85s cubic-bezier(.22,1,.36,1),opacity .6s ease}
+.vb-loader.is-out{opacity:0;visibility:hidden}
+.vb-loader.is-out canvas{transform:scale(.82) translateY(-6px);opacity:0}
+/* The sections slide in from the sides (see the script at the end): nothing may widen the page. */
+html{overflow-x:clip}
 </style>
 <!--/OGB:HEAD-->
 <script src="/analytics.js"></script>
 </head>
 <body>
+<div class="vb-loader" data-vb-loader="self" aria-hidden="true"><canvas></canvas></div>
 <!--OGB:BODY-->
 <script type="module" async>
 import * as THREE from "three";
@@ -750,6 +760,62 @@ renderProducts("all");
   var pid=new URLSearchParams(location.search).get("producto");
   var p=pid&&products.find(function(x){return String(x.id)===pid;});
   if(p&&!p.soldOut){ var c=document.getElementById("catalogo"); if(c)c.scrollIntoView(); openModal(p.name,p.price,p.noSize||false,p.id); }
+})();
+</script>
+<script>
+/*
+ * Sections come in like trains: scrolling down, each block slides in from one side (alternating
+ * left and right) and pulls up in place as it rises into view, eased like a train braking. The
+ * product grid comes in a row at a time, the row's cards together. Driven by the scroll itself
+ * (no timers), so scrolling back up runs it backwards. Nothing moves with reduced motion.
+ */
+(function () {
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  var grid = document.getElementById('catalog-grid');
+  var units = [];
+  function collect() {
+    units.forEach(function (u) { u.el.style.transform = ''; });
+    units = [];
+    var n = 0;
+    function add(el) { if (el) units.push({ el: el, dir: n++ % 2 ? -1 : 1 }); }
+    add(document.querySelector('.ticker'));
+    add(document.querySelector('.og-cta'));
+    add(document.querySelector('.catalog-header'));
+    // The grid, row by row: cards sharing a top come in together.
+    var rows = {};
+    Array.prototype.forEach.call(grid ? grid.children : [], function (c) {
+      var k = Math.round(c.offsetTop / 8);
+      (rows[k] = rows[k] || []).push(c);
+    });
+    Object.keys(rows).sort(function (a, b) { return a - b; }).forEach(function (k) {
+      var dir = n++ % 2 ? -1 : 1;
+      rows[k].forEach(function (c) { units.push({ el: c, dir: dir }); });
+    });
+    add(document.querySelector('.filosofia-left'));
+    add(document.querySelector('.filosofia-right'));
+    add(document.querySelector('footer'));
+    add(document.querySelector('.footer-bottom'));
+    add(document.querySelector('.footer-credit'));
+    frame();
+  }
+  // In place by the time a block's top has risen ~45% of the screen into view.
+  function frame() {
+    ticking = false;
+    var vh = innerHeight;
+    units.forEach(function (u) {
+      var top = u.el.getBoundingClientRect().top;
+      var p = (vh * 0.98 - top) / (vh * 0.45);
+      p = p < 0 ? 0 : p > 1 ? 1 : p;
+      var e = 1 - Math.pow(1 - p, 3);
+      u.el.style.transform = e >= 1 ? '' : 'translate3d(' + ((1 - e) * u.dir * 100).toFixed(2) + 'vw,0,0)';
+    });
+  }
+  var ticking = false;
+  addEventListener('scroll', function () { if (!ticking) { ticking = true; requestAnimationFrame(frame); } }, { passive: true });
+  addEventListener('resize', collect);
+  // The grid is filled (and refilled by the filters) by script: regroup its rows when it changes.
+  if (grid) new MutationObserver(collect).observe(grid, { childList: true });
+  collect();
 })();
 </script>
 </body>
