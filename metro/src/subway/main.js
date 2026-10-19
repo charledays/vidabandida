@@ -178,6 +178,7 @@ function start() {
     if (busy || frozen != null || i < 0) return false;
     run = journey.plan(scroll.progress(), i, dir || 1);
     if (!run) return false;
+    restOnDoors();
     setBusy('ride');
     return true;
   }
@@ -505,6 +506,16 @@ function start() {
     tilt: 0.6, tiltHome: 0.25, tiltSmooth: 7
   };
   var seatLook = { yaw: SEAT_LOOK.home, drag: SEAT_LOOK.home, vel: 0, gyro: 0, tiltDeg: 0, touch: null, released: 0, lastMove: 0 };
+  /**
+   * Where the head rests right now. It starts at SEAT_LOOK.home (on a phone, the panda); once the
+   * doors are opened or a ride is taken it's the doors (0), so the way out stays in view and the
+   * head doesn't drift back off them.
+   */
+  var restYaw = SEAT_LOOK.home;
+  function restOnDoors() {
+    restYaw = 0;
+    if (intro) { intro = null; introDone = true; }
+  }
   /** Has the visitor looked around yet? The first hint teaches it, before opening the doors. */
   var looked = false;
   /** Past an end, the finger's travel counts less and less (rubber band). */
@@ -964,6 +975,8 @@ function start() {
         return timeline.at(p0 + (p1 - p0) * f);
       }
     };
+    // Opening up: the head turns to the doors (the way out) and rests there from now on.
+    restOnDoors();
     setBusy('ride');
     return true;
   }
@@ -1072,7 +1085,7 @@ function start() {
     if (!intro.t0) intro.t0 = performance.now();
     var t = Math.min(1, (performance.now() - intro.t0) / 1000 / INTRO.s);
     var e = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-    seatLook.drag = INTRO.from + (SEAT_LOOK.home - INTRO.from) * e;
+    seatLook.drag = INTRO.from + (restYaw - INTRO.from) * e;
     seatLook.vel = 0;
     seatLook.released = performance.now();
     if (t >= 1) { intro = null; introDone = true; }
@@ -1165,7 +1178,7 @@ function start() {
     // Seated on a phone: the drag with its glide and rubber band, plus the softened phone turn.
     var seated = seatedHere();
     // (While the opening sweep waits for the scene, the head holds at its start.)
-    if (!seated) { seatLook.drag = intro ? INTRO.from : SEAT_LOOK.home; seatLook.vel = 0; seatLook.touch = null; seatLook.tiltDeg = 0; }
+    if (!seated) { seatLook.drag = intro ? INTRO.from : restYaw; seatLook.vel = 0; seatLook.touch = null; seatLook.tiltDeg = 0; }
     else if (!seatLook.touch) {
       var L = SEAT_LOOK.left, R = SEAT_LOOK.right;
       // Glide on from a flick, slowing; reduced motion skips the glide.
@@ -1179,7 +1192,7 @@ function start() {
         seatLook.drag = Math.max(R - SEAT_LOOK.stretch, Math.min(L + SEAT_LOOK.stretch, seatLook.drag));
       } else if (Math.abs(seatLook.vel) < 0.02 && performance.now() - seatLook.released > SEAT_LOOK.returnMs) {
         // Left alone: drift home (toward the panda).
-        seatLook.drag = SEAT_LOOK.home + (seatLook.drag - SEAT_LOOK.home) * (reduceMotion ? 0 : Math.exp(-dt * 2.5));
+        seatLook.drag = restYaw + (seatLook.drag - restYaw) * (reduceMotion ? 0 : Math.exp(-dt * 2.5));
       }
     }
     // The phone's turn settles back to centre over time, and reaches the view smoothed and scaled.
