@@ -14,7 +14,7 @@
  */
 import * as THREE from 'three';
 import { CAR, WORLD, LEG, CRUISE_SPEED, START, START_CLOSED, DOOR_WALK } from './config.js';
-import { stations, mapStops, adArt, bandidajeFino } from './stations.js?v=20261019b';
+import { stations, mapStops, adArt, bandidajeFino } from './stations.js?v=20261019c';
 import { createTimeline } from './timeline.js';
 import { createScroll } from './scroll.js?v=20261020';
 import { createJourney } from './journey.js';
