@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Featured · VIDABANDIDA</title>
+<meta name="description" content="VIDABANDIDA, Lima. Featured: VIDABANDIDA TRACKS, drops, collabs y reels del universo VIDABANDIDA.">
+<link rel="canonical" href="https://vidabandida.art/featured/">
+<meta property="og:title" content="Featured · VIDABANDIDA">
+<meta property="og:description" content="VIDABANDIDA TRACKS, drops, collabs y reels.">
+<meta property="og:image" content="https://vidabandida.art/featured/img/vidabandida-x-ekors-mob.jpg">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+@font-face{font-family:"Fritch";src:url("fritch.ttf") format("truetype");font-display:swap}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--ink:#181614;--cream:#F0EBE1;--accent:#D63B0C;--muted:rgba(240,235,225,0.55);--border:rgba(240,235,225,0.14);--fd:"Fritch",serif;--fb:"Space Grotesk",sans-serif}
+body{background:var(--ink);color:var(--cream);font-family:var(--fb);font-size:15px;line-height:1.6;overflow-x:hidden;cursor:crosshair}
+a{color:inherit}
+nav{position:fixed;top:0;left:0;right:0;z-index:10;display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:0 2.5rem;height:56px;border-bottom:1px solid var(--border);background:rgba(10,9,8,.92)}
+.nav-logo{height:22px;opacity:.9;display:block}
+.nav-links{display:flex;gap:2.5rem;list-style:none}
+.nav-links a{font-size:11px;font-weight:300;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);text-decoration:none;transition:color .15s}
+.nav-links a:hover,.nav-links a[aria-current]{color:var(--cream)}
+main{padding:calc(56px + 4rem) 2.5rem 4rem;max-width:1400px;margin:0 auto}
+.kicker{font-size:10px;font-weight:300;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:1rem}
+h1{font-family:var(--fd);font-weight:400;font-size:clamp(52px,9vw,112px);line-height:.92;letter-spacing:.03em}
+h1 sup{font-family:var(--fb);font-size:13px;font-weight:300;letter-spacing:.1em;color:var(--accent);vertical-align:top;margin-left:.4em}
+.intro{max-width:420px;margin:1.5rem 0 3.5rem;font-weight:300;color:rgba(240,235,225,.75)}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:2px}
+.card{display:block;text-decoration:none;position:relative;background:#0e0d0c}
+.frame{aspect-ratio:4/5;overflow:hidden}
+.frame img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .5s ease,filter .3s}
+.card:hover .frame img,.card:focus-visible .frame img{transform:scale(1.035);filter:brightness(.82)}
+.card:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.cap{display:flex;justify-content:space-between;align-items:baseline;gap:1rem;padding:.75rem .9rem 1.1rem}
+.cap b{font-weight:500;font-size:12px;letter-spacing:.06em;text-transform:uppercase}
+.cap span{font-size:11px;font-weight:300;color:var(--muted);white-space:nowrap}
+.cap .go{color:var(--accent)}
+footer{border-top:1px solid var(--border);margin-top:4rem;padding:2rem 2.5rem;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap}
+footer a{color:var(--muted);text-decoration:none}footer a:hover{color:var(--cream)}
+@media (max-width:820px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.cap span{white-space:normal}nav{padding:0 16px}.nav-links{gap:1.1rem}.nav-links .hide-sm{display:none}main{padding:calc(56px + 2.5rem) 16px 3rem}footer{padding:1.5rem 16px}.cap{flex-direction:column;gap:.15rem;padding:.6rem .6rem .9rem}}
+@media (prefers-reduced-motion:reduce){.frame img{transition:none}}
+</style>
+</head>
+<body>
+<nav>
+  <a href="/" aria-label="VIDABANDIDA, volver al metro"><img class="nav-logo" src="/vb-logo.png" alt="Vidabandida"></a>
+  <ul class="nav-links">
+    <li><a href="/">Metro</a></li>
+    <li><a href="/shop/">Shop</a></li>
+    <li class="hide-sm"><a href="/og-bandit/">OG Bandit</a></li>
+    <li><a href="/featured/" aria-current="page">Featured</a></li>
+  </ul>
+</nav>
+<main>
+  <p class="kicker">Collabs · Tracks · Drops · Reels</p>
+  <h1>FEATURED<sup>09</sup></h1>
+  <p class="intro">Lo que pasa en el universo VIDABANDIDA. Cada imagen abre su reel en Instagram.</p>
+  <div class="grid" id="grid"></div>
+</main>
+<footer>
+  <span>VIDABANDIDA · Lima</span>
+  <a href="https://instagram.com/vidabandida.mob" target="_blank" rel="noopener">@vidabandida.mob ↗</a>
+</footer>
+<script>
+// Mismos reels e imágenes que la serie VIDABANDIDA de charlesdays.art/film, en el mismo orden.
+const REELS = [
+  ['MORENA (PE)', 2026, 'morena-pe', 'https://www.instagram.com/p/DW7hbzqjs0x/'],
+  ['VIDABANDIDA TRACKS: DJ SHEILER', 2026, 'vidabandida-tracks-dj-sheiler', 'https://www.instagram.com/p/DYXh44gxjWg/'],
+  ['VIDABANDIDA TRACKS: ALYH', 2026, 'vidabandida-tracks-karem-ro', 'https://www.instagram.com/p/DYP1adVxgRz/'],
+  ['VIDABANDIDA TRACKS: KAREM RO', 2026, 'vidabandida-tracks-alyh', 'https://www.instagram.com/p/DYpzRf0xvY_/'],
+  ['VÖZCHLER: CHARLES ft DJ SHEILER', 2026, 'vozchler-charles-ft-dj-sheiler', 'https://www.instagram.com/p/DZSNBQzRYN4/'],
+  ['VIDABANDIDA DROP: ROCOCO KITSUNE I', 2024, 'vidabandida-drop-rococo-kitsune-i', 'https://www.instagram.com/p/DDAx_-LxNo_/'],
+  ['VIDABANDIDA DROP: ROCOCÓ KITSUNE II', 2024, 'vidabandida-drop-rococo-kitsune-ii', 'https://www.instagram.com/p/DDdPAnlRv8j/'],
+  ['VIDABANDIDA DROP: CABALLO GANADOR', 2024, 'vidabandida-drop-caballo-ganador', 'https://www.instagram.com/p/DDDSm-5RFGW/'],
+  ['VIDABANDIDA x EKORS: M.O.B', 2026, 'vidabandida-x-ekors-mob', 'https://www.instagram.com/p/DZYSac1P4Uu/'],
+];
+const grid = document.getElementById('grid');
+REELS.forEach(([title, year, img, url], i) => {
+  const a = document.createElement('a');
+  a.className = 'card'; a.href = url; a.target = '_blank'; a.rel = 'noopener';
+  a.setAttribute('aria-label', `${title} (${year}), ver reel en Instagram`);
+  a.innerHTML = `<div class="frame"><img src="img/${img}.jpg" alt="${title}" ${i > 2 ? 'loading="lazy"' : ''} decoding="async"></div>
+    <div class="cap"><b>${title}</b><span>${year} · <span class="go">Ver reel ↗</span></span></div>`;
+  a.addEventListener('click', () => { try { window.gtag && gtag('event', 'featured_reel', { reel: img }); } catch (e) {} });
+  grid.append(a);
+});
+</script>
+<script src="/analytics.js"></script>
+</body>
+</html>
