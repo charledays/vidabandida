@@ -324,9 +324,10 @@ footer{border-top:1px solid var(--border);padding:2.5rem;display:grid;grid-templ
 body::before{content:"";position:fixed;inset:0;z-index:-1;background:#0e0e0e url("/og-bandit/fondo-caligrafia.webp") center/cover no-repeat;pointer-events:none}
 .filosofia{background:transparent}
 /* The sign-off, centred under everything: "Hecho con criterio", criterio links to its site. */
-.footer-credit{display:block;margin:0;padding:0 1.25rem 1.6rem;text-align:center}
-.footer-credit a{color:inherit;text-decoration:underline;text-underline-offset:3px;transition:color .15s}
-.footer-credit a:hover{color:var(--cream)}
+.footer-credit{display:block;margin:0;padding:0 1.25rem 1.6rem;text-align:center;color:rgba(240,235,225,.7)}
+/* criterio stands out: full cream, a touch bolder, the line's orange underline. */
+.footer-credit a{color:var(--cream);font-weight:500;text-decoration:underline;text-decoration-color:var(--accent);text-underline-offset:3px;transition:color .15s}
+.footer-credit a:hover{color:var(--accent)}
 </style>
 <!--/OGB:HEAD-->
 <script src="/analytics.js"></script>
