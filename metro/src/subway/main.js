@@ -33,6 +33,8 @@ import { createCameraRig } from './camera-rig.js';
 import { createAudio } from './audio.js';
 import { createUI } from './ui.js?v=20261020';
 import { createSpray } from './spray.js?v=20261020';
+// The same URL as index.html's <script> for it, so it's the one module (and the one loading screen).
+import { spinToy } from '/loader.js?v=20261019e';
 import { web } from './web.js';
 import { createBandits } from './bandits.js';
 
@@ -247,9 +249,21 @@ function start() {
       dip: s((t - EXIT.dip0) / (EXIT.total - EXIT.dip0))
     };
   }
+  /**
+   * On the walk out, half a second after setting off down the platform, the loading panda fades
+   * in over the walk, turning, and stays through the dip to black: the section's own loading
+   * screen has it in the same place, so there's one wait, not two.
+   */
+  var exitToy = { el: document.querySelector('[data-exit-toy]'), spin: null };
+  function showExitToy(on) {
+    if (!exitToy.el) return;
+    if (on && !exitToy.spin) { exitToy.spin = spinToy(exitToy.el.querySelector('canvas')); exitToy.el.classList.add('is-on'); }
+    if (!on && exitToy.spin) { exitToy.el.classList.remove('is-on'); exitToy.spin.stop(); exitToy.spin = null; }
+  }
   // Back from the section page (the browser's back button restores this page as it was): sit down again.
   window.addEventListener('pageshow', function (e) {
     if (!e.persisted || !exit) return;
+    showExitToy(false);
     exit = null;
     setBusy(null);
     rig.setLane(0, 0);
@@ -1218,6 +1232,7 @@ function start() {
     if (exit && exit.platform) {
       var pt = (performance.now() - exit.t0) / 1000;
       var pp = platformExitPose(pt, exit);
+      if (reduceMotion || pt >= PLATFORM_EXIT.walk0 + 0.5) showExitToy(true);
       rig.setDoor(pp.door);
       rig.setLook(pp.yaw);
       rig.setSpot(pp.along);
@@ -1228,6 +1243,7 @@ function start() {
     } else if (exit) {
       var et = (performance.now() - exit.t0) / 1000;
       var ep = exitPose(et);
+      if (reduceMotion || et >= EXIT.walk0 + 0.5) showExitToy(true);
       rig.setDoor(ep.door);
       rig.setLook(ep.yaw);
       rig.setSpot(ep.along);

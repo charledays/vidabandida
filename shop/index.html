@@ -302,7 +302,7 @@ footer{border-top:1px solid var(--border);padding:2.5rem;display:grid;grid-templ
   "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
 } }
 </script>
-<script type="module" src="/loader.js?v=20261019"></script>
+<script type="module" src="/loader.js?v=20261019e"></script>
 <style>
 /* OG BANDIT: the way into the dress-up under the hero (the black toy with a "?" for a face).
    A slim band, so the end of the hero, this and the start of the catalogue fit on one screen. */
@@ -330,19 +330,22 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;background:#0e0e0e url
 .footer-credit a{color:var(--cream);font-weight:500;text-decoration:underline;text-decoration-color:var(--accent);text-underline-offset:3px;transition:color .15s}
 .footer-credit a:hover{color:var(--accent)}
 /* Loading: the black OG BANDIT turning on black (/loader.js), the same on every page; it leaves softly. */
-.vb-loader{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;background:#050505;transition:opacity .85s cubic-bezier(.4,0,.2,1),visibility 0s linear .85s}
+.vb-loader{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.1rem;background:#050505;transition:opacity .85s cubic-bezier(.4,0,.2,1),visibility 0s linear .85s}
+.vb-loader-pct{position:relative;margin:0;font:600 .78rem/1 "Archivo Narrow","Helvetica Neue",Arial,sans-serif;letter-spacing:.18em;color:rgba(240,235,225,.55);font-variant-numeric:tabular-nums;transition:opacity .5s ease}
+.vb-loader.is-out .vb-loader-pct{opacity:0}
 .vb-loader::before{content:"";position:absolute;width:min(40vw,190px);aspect-ratio:1;border-radius:50%;background:radial-gradient(closest-side,rgba(240,235,225,.07),rgba(240,235,225,0));pointer-events:none}
 .vb-loader canvas{position:relative;width:min(26vw,110px);height:min(18svh,132px);display:block;transition:transform .85s cubic-bezier(.22,1,.36,1),opacity .6s ease}
 .vb-loader.is-out{opacity:0;visibility:hidden}
 .vb-loader.is-out canvas{transform:scale(.82) translateY(-6px);opacity:0}
 /* The sections slide in from the sides (see the script at the end): nothing may widen the page. */
 html{overflow-x:clip}
+.trains .product-card{animation:none}
 </style>
 <!--/OGB:HEAD-->
 <script src="/analytics.js"></script>
 </head>
 <body>
-<div class="vb-loader" data-vb-loader="self" aria-hidden="true"><canvas></canvas></div>
+<div class="vb-loader" data-vb-loader="self" aria-hidden="true"><canvas></canvas><p class="vb-loader-pct" data-vb-pct>0%</p></div>
 <!--OGB:BODY-->
 <script type="module" async>
 import * as THREE from "three";
@@ -771,6 +774,8 @@ renderProducts("all");
  */
 (function () {
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  // The cards' own fade-up (an animation that holds its last frame) would override the slide.
+  document.documentElement.classList.add('trains');
   var grid = document.getElementById('catalog-grid');
   var units = [];
   function collect() {
@@ -798,13 +803,16 @@ renderProducts("all");
     add(document.querySelector('.footer-credit'));
     frame();
   }
-  // In place by the time a block's top has risen ~45% of the screen into view.
+  // In place by the time a block's top has risen ~45% of the screen into view, or, for the
+  // blocks at the very end that can't rise that far, by the time the page is scrolled to the bottom.
   function frame() {
     ticking = false;
-    var vh = innerHeight;
+    var vh = innerHeight, y = scrollY;
+    var maxY = document.documentElement.scrollHeight - vh;
     units.forEach(function (u) {
-      var top = u.el.getBoundingClientRect().top;
-      var p = (vh * 0.98 - top) / (vh * 0.45);
+      var topAbs = u.el.getBoundingClientRect().top + y;
+      var endY = Math.min(topAbs - vh * 0.53, maxY);
+      var p = (y - (endY - vh * 0.45)) / (vh * 0.45);
       p = p < 0 ? 0 : p > 1 ? 1 : p;
       var e = 1 - Math.pow(1 - p, 3);
       u.el.style.transform = e >= 1 ? '' : 'translate3d(' + ((1 - e) * u.dir * 100).toFixed(2) + 'vw,0,0)';

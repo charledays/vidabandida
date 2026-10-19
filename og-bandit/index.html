@@ -168,14 +168,16 @@
 <!--OGB:LOADER-->
 <style>
 /* Loading: the black OG BANDIT turning on black (/loader.js), the same on every page; it leaves softly. */
-.vb-loader{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;background:#050505;transition:opacity .85s cubic-bezier(.4,0,.2,1),visibility 0s linear .85s}
+.vb-loader{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.1rem;background:#050505;transition:opacity .85s cubic-bezier(.4,0,.2,1),visibility 0s linear .85s}
+.vb-loader-pct{position:relative;margin:0;font:600 .78rem/1 "Archivo Narrow","Helvetica Neue",Arial,sans-serif;letter-spacing:.18em;color:rgba(240,235,225,.55);font-variant-numeric:tabular-nums;transition:opacity .5s ease}
+.vb-loader.is-out .vb-loader-pct{opacity:0}
 .vb-loader::before{content:"";position:absolute;width:min(40vw,190px);aspect-ratio:1;border-radius:50%;background:radial-gradient(closest-side,rgba(240,235,225,.07),rgba(240,235,225,0));pointer-events:none}
 .vb-loader canvas{position:relative;width:min(26vw,110px);height:min(18svh,132px);display:block;transition:transform .85s cubic-bezier(.22,1,.36,1),opacity .6s ease}
 .vb-loader.is-out{opacity:0;visibility:hidden}
 .vb-loader.is-out canvas{transform:scale(.82) translateY(-6px);opacity:0}
 </style>
-<div class="vb-loader" data-vb-loader="self" aria-hidden="true"><canvas></canvas></div>
-<script type="module" src="/loader.js?v=20261019"></script>
+<div class="vb-loader" data-vb-loader="self" data-vb-wait="ogb-ready" aria-hidden="true"><canvas></canvas><p class="vb-loader-pct" data-vb-pct>0%</p></div>
+<script type="module" src="/loader.js?v=20261019e"></script>
 <!--/OGB:LOADER-->
 <script type="module">
 import * as THREE from "three";
