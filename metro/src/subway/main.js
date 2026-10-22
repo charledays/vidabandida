@@ -14,7 +14,7 @@
  */
 import * as THREE from 'three';
 import { CAR, WORLD, LEG, CRUISE_SPEED, START, START_CLOSED, DOOR_WALK } from './config.js';
-import { stations, mapStops, adArt, bandidajeFino } from './stations.js?v=20261019c';
+import { stations, mapStops, adArt, bandidajeFino } from './stations.js?v=20261021';
 import { createTimeline } from './timeline.js';
 import { createScroll } from './scroll.js?v=20261020';
 import { createJourney } from './journey.js';
@@ -31,7 +31,7 @@ import { createTunnel } from './exterior/tunnel.js';
 import { buildStation } from './exterior/station.js?v=20261020';
 import { createCameraRig } from './camera-rig.js';
 import { createAudio } from './audio.js?v=20261021';
-import { createUI } from './ui.js?v=20261021b';
+import { createUI } from './ui.js?v=20261021c';
 import { createSpray } from './spray.js?v=20261020';
 // The same URL as index.html's <script> for it, so it's the one module (and the one loading screen).
 import { spinToy } from '/loader.js?v=20261019e';
@@ -172,7 +172,8 @@ function start() {
   var run = null;
   // A stop on the line map rides the train there.
   var detachMap = lineMap.attach(camera, canvas, function (i) {
-    rideToStation(stations.indexOf(mapStops[i]));
+    if (mapStops[i].link) window.location.href = mapStops[i].href;
+    else rideToStation(stations.indexOf(mapStops[i]));
   });
 
   /** Ride to station i (doors shut, depart, tunnel, arrive, doors open); dir -1 rides backward. False if nothing ran. */

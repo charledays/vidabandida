@@ -43,18 +43,13 @@ export function createUI(root, stations, links, handlers) {
     b.querySelector('small').textContent = stop.note || '';
     b.addEventListener('click', function () {
       closeSheet();
-      handlers.ride(stations.indexOf(stop));
+      if (stop.link) window.location.href = stop.href;
+      else handlers.ride(stations.indexOf(stop));
     });
     li.appendChild(b);
     sheetStops.appendChild(li);
     return li;
   });
-  // Off the line: the game, as the last stop on the map (a link, not a ride).
-  var game = document.createElement('li');
-  game.className = 'game-stop';
-  game.innerHTML = '<a href="/juego/"><span class="dot" aria-hidden="true"></span><span><strong>OG BANDIT RUN</strong><small>Juego · beta</small></span></a>';
-  sheetStops.appendChild(game);
-
   function openSheet() {
     if (busy) return;
     sheet.hidden = false;
@@ -83,15 +78,13 @@ export function createUI(root, stations, links, handlers) {
     a.href = stop.href;
     a.textContent = stop.name;
     a.addEventListener('click', function (e) {
+      if (stop.link) return; // off the line: a plain link
       e.preventDefault();
       handlers.ride(stations.indexOf(stop));
     });
     li.appendChild(a);
     list.appendChild(li);
   });
-  var gameLink = document.createElement('li');
-  gameLink.innerHTML = '<a href="/juego/">OG BANDIT RUN (juego)</a>';
-  list.appendChild(gameLink);
 
   var last = {};
   function set(key, value, apply) {

@@ -41,5 +41,11 @@ export var bandidajeFino = {
   poster: V + 'pasteup-bandidaje-fino.webp'
 };
 
-/** The line map's stops are the stations themselves, so the map and the ride always agree. */
-export var mapStops = stations;
+/**
+ * Off the line: the game. The last stop on both line maps (the one in the car and the MAPA
+ * sheet), but a link, not a ride: `link` takes the visitor straight to its page.
+ */
+export var gameStop = { id: 'juego', name: 'OG BANDIT RUN', note: 'Juego · beta', href: '/juego/', link: true };
+
+/** The line map's stops: the stations themselves (so the map and the ride agree), then the game. */
+export var mapStops = stations.concat([gameStop]);
