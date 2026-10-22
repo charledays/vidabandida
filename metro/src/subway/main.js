@@ -31,7 +31,7 @@ import { createTunnel } from './exterior/tunnel.js';
 import { buildStation } from './exterior/station.js?v=20261020';
 import { createCameraRig } from './camera-rig.js';
 import { createAudio } from './audio.js?v=20261021';
-import { createUI } from './ui.js?v=20261021';
+import { createUI } from './ui.js?v=20261021b';
 import { createSpray } from './spray.js?v=20261020';
 // The same URL as index.html's <script> for it, so it's the one module (and the one loading screen).
 import { spinToy } from '/loader.js?v=20261019e';
