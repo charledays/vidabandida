@@ -8,17 +8,18 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#080809;--ink:#f3efe7;--line:#D63B0C;--display:'Space Grotesk',sans-serif;--body:'DM Sans',sans-serif}
+@font-face{font-family:"Fritch";src:url("/featured/fritch.ttf") format("truetype");font-display:swap}
+:root{--bg:#080809;--ink:#f3efe7;--line:#D63B0C;--display:'Fritch',sans-serif;--body:'Space Grotesk',sans-serif}
 *{box-sizing:border-box}
 html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:var(--body);overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none}
 canvas{display:block;position:fixed;inset:0;width:100%;height:100%}
 .layer{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;text-align:center;padding:24px;pointer-events:none}
 .layer.on{pointer-events:auto}
 .hide{display:none!important}
-h1{font-family:var(--display);font-weight:700;font-size:clamp(40px,9vw,96px);line-height:.9;margin:0;letter-spacing:-.02em;text-shadow:0 4px 24px rgba(0,0,0,.6)}
+h1{font-family:var(--display);font-weight:400;font-size:clamp(40px,9vw,96px);line-height:.92;margin:0 0 .14em;letter-spacing:.03em;text-shadow:0 4px 24px rgba(0,0,0,.6)}
 h1 span{color:var(--line)}
 .sub{font-size:14px;letter-spacing:.2em;text-transform:uppercase;opacity:.8}
-.btn{font-family:var(--display);font-weight:700;font-size:20px;letter-spacing:.06em;background:var(--line);color:var(--ink);border:0;padding:14px 30px;cursor:pointer;text-transform:uppercase}
+.btn{font-family:var(--display);font-weight:400;font-size:20px;letter-spacing:.06em;background:var(--line);color:var(--ink);border:0;padding:14px 30px;cursor:pointer;text-transform:uppercase}
 .btn.ghost{background:transparent;border:2px solid var(--ink)}
 .pulse{animation:p 1.2s ease-in-out infinite}@keyframes p{50%{opacity:.45}}
 .swatches{display:flex;gap:10px}
@@ -28,14 +29,14 @@ h1 span{color:var(--line)}
 #hud{position:fixed;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:flex-start;padding:calc(14px + env(safe-area-inset-top)) 16px 0;pointer-events:none;font-family:var(--display);font-weight:700}
 #hud .box{background:rgba(8,8,9,.72);padding:8px 14px;font-size:22px}
 #hud .coins::before{content:'';display:inline-block;width:14px;height:14px;border-radius:50%;background:#e8b923;margin-right:8px;vertical-align:-1px}
-#pauseBtn{pointer-events:auto;background:var(--line);color:var(--ink);border:0;font:700 18px var(--display);width:42px;height:42px;cursor:pointer}
-#over .score{font-family:var(--display);font-size:64px;font-weight:700}
+#pauseBtn{pointer-events:auto;background:var(--line);color:var(--ink);border:0;font:400 20px var(--display);width:42px;height:42px;cursor:pointer}
+#over .score{font-family:var(--display);font-size:64px;font-weight:400;letter-spacing:.03em}
 #over .rec{color:var(--line);font-weight:700;letter-spacing:.1em}
 .row{display:flex;gap:12px}
 @media (orientation:landscape){#menu{align-items:flex-start;text-align:left;padding-left:8vw}#menu .help{text-align:left}}
 @media (orientation:portrait){#menu{justify-content:flex-start;padding-top:calc(48px + env(safe-area-inset-top))}}
-.story{font-family:var(--display);font-size:20px;line-height:1.3}.story b{color:var(--line)}
-#alert{position:fixed;left:0;right:0;top:22%;text-align:center;font:700 clamp(22px,4.5vw,44px)/1.1 var(--display);text-shadow:0 3px 18px rgba(0,0,0,.8);pointer-events:none;animation:al 2.4s ease-out forwards}#alert span{color:var(--line);font-size:1.5em}@keyframes al{0%{opacity:0;transform:scale(1.3)}12%{opacity:1;transform:scale(1)}80%{opacity:1}100%{opacity:0}}
+.story{font-family:var(--body);font-weight:500;font-size:18px;line-height:1.4}.story b{color:var(--line)}
+#alert{position:fixed;left:0;right:0;top:22%;text-align:center;font:400 clamp(26px,5vw,52px)/1 var(--display);letter-spacing:.03em;text-shadow:0 3px 18px rgba(0,0,0,.8);pointer-events:none;animation:al 2.4s ease-out forwards}#alert span{color:var(--line);font-size:1.5em}@keyframes al{0%{opacity:0;transform:scale(1.3)}12%{opacity:1;transform:scale(1)}80%{opacity:1}100%{opacity:0}}
 #load .bar{width:220px;height:4px;background:rgba(243,239,231,.2)}#load .bar i{display:block;height:100%;width:0;background:var(--line)}
 </style>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
@@ -141,17 +142,6 @@ const trackTex = canvasTex(512, 512, (g, w, h) => {
   }
 }, [1, 12]);
 
-const graffitiWords = ['VIDABANDIDA', 'OG BANDIT', 'HECHO CON CRITERIO', 'CHLOROTYPE', 'BANDIDO', 'LIMA', 'CRITERIO'];
-function wallTex(word, base) {
-  return canvasTex(512, 256, (g, w, h) => {
-    g.fillStyle = base; g.fillRect(0, 0, w, h); noise(g, w, h, 4000, .25, ['#000', '#fff']);
-    for (let i = 0; i < 4; i++) { g.fillStyle = `hsla(${Math.random() * 360},40%,85%,.9)`; g.fillRect(Math.random() * w, Math.random() * h * .5, 50 + Math.random() * 40, 70 + Math.random() * 30); }
-    g.save(); g.translate(w / 2, h * .62); g.rotate(-.06);
-    g.font = `700 ${word.length > 10 ? 52 : 70}px 'Space Grotesk', Impact, sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle';
-    g.lineWidth = 10; g.strokeStyle = '#080809'; g.strokeText(word, 0, 0);
-    g.fillStyle = Math.random() < .5 ? '#D63B0C' : '#f3efe7'; g.fillText(word, 0, 0); g.restore();
-  });
-}
 const windowTex = canvasTex(128, 256, (g, w, h) => {
   g.fillStyle = '#fff'; g.fillRect(0, 0, w, h);
   for (let y = 12; y < h; y += 32) for (let x = 10; x < w; x += 30) { const lit = Math.random() < .35; g.fillStyle = lit ? '#ffd28a' : '#3a3440'; g.fillRect(x, y, 16, 20); }
@@ -176,19 +166,16 @@ track.rotation.x = -Math.PI / 2; track.receiveShadow = true; scene.add(track);
 const side = new THREE.Mesh(new THREE.PlaneGeometry(60, 200), new THREE.MeshStandardMaterial({ color: 0x4a3e40, roughness: 1 }));
 side.rotation.x = -Math.PI / 2; side.position.y = -0.02; side.receiveShadow = true; scene.add(side);
 
-// ---------- decorado reciclado (muros con graffiti, edificios, postes)
+// ---------- decorado reciclado (edificios, postes)
 const deco = [];
 const DECO_STEP = 12, DECO_N = 14;
-const wallMats = graffitiWords.map((w, i) => new THREE.MeshStandardMaterial({ map: wallTex(w, ['#6d6e74', '#b97d86', '#3c4a52', '#7fb6d1', '#8a6a4a'][i % 5]), roughness: .95 }));
 const bldColors = [0xb97d86, 0x6d6e74, 0x7fb6d1, 0xd9c7a8, 0x8a5a4a, 0x3c4a52];
-const wallGeo = new THREE.BoxGeometry(.5, 2.4, DECO_STEP);
 const bldGeo = new THREE.BoxGeometry(1, 1, 1);
 const poleGeo = new THREE.CylinderGeometry(.08, .08, 6, 6);
 const poleMat = new THREE.MeshStandardMaterial({ color: 0x2b2b2e, metalness: .6, roughness: .5 });
 function makeDeco(z) {
   const g = new THREE.Group();
   for (const s of [-1, 1]) {
-    const wall = new THREE.Mesh(wallGeo, pick(wallMats)); wall.position.set(s * 5.2, 1.2, 0); wall.rotation.y = s > 0 ? Math.PI : 0; wall.castShadow = wall.receiveShadow = true; g.add(wall);
     const h = 8 + rnd() * 18, w = 6 + rnd() * 4;
     const m = new THREE.MeshStandardMaterial({ color: pick(bldColors), map: windowTex, roughness: .85, emissive: 0x2a1a10, emissiveIntensity: .3 });
     const b = new THREE.Mesh(bldGeo, m); b.scale.set(w, h, DECO_STEP - 1); b.position.set(s * (8 + w / 2 + rnd() * 3), h / 2, 0); b.receiveShadow = true; g.add(b);
