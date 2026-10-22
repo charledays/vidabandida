@@ -93,11 +93,31 @@ export function createUI(root, stations, links, handlers) {
 
   var busy = false;
 
-  el.sound.addEventListener('click', function () {
-    var on = handlers.toggleSound();
+  /**
+   * Sound starts on with the visitor's first tap, click or key anywhere (browsers only let audio
+   * start inside a gesture; a wheel scroll isn't one). Turning it off with the chip is
+   * remembered across visits, and then it stays off until turned back on.
+   */
+  var SOUND_KEY = 'vidabandida.metro.sound';
+  function showSound(on) {
     el.sound.setAttribute('aria-pressed', on ? 'true' : 'false');
     // The speaker icon follows aria-pressed (index.html); the label says it in words.
     el.sound.setAttribute('aria-label', on ? 'Sound on' : 'Sound off');
+  }
+  var GESTURES = ['pointerup', 'touchend', 'click', 'keydown'];
+  function firstGesture(e) {
+    GESTURES.forEach(function (type) { window.removeEventListener(type, firstGesture, true); });
+    if (el.sound.contains(e.target)) return; // the chip's own click turns it on
+    showSound(handlers.toggleSound());
+  }
+  if (load(SOUND_KEY) !== 'off') {
+    GESTURES.forEach(function (type) { window.addEventListener(type, firstGesture, true); });
+  }
+  el.sound.addEventListener('click', function () {
+    GESTURES.forEach(function (type) { window.removeEventListener(type, firstGesture, true); });
+    var on = handlers.toggleSound();
+    save(SOUND_KEY, on ? null : 'off');
+    showSound(on);
   });
 
   /**
