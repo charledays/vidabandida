@@ -89,7 +89,40 @@ export function createAudio() {
     o.stop(t + dur + 0.05);
   }
 
+  /**
+   * iPhone: with the ring/silent switch on silent, Safari mutes Web Audio entirely. Asking for
+   * the "playback" session (Safari 17+) — or, on older iOS, playing a silent looping <audio>
+   * element inside the same tap — makes the ride sound like a video does, switch or not.
+   */
+  var unlock = null;
+  function playbackSession(on) {
+    if (navigator.audioSession) {
+      try { navigator.audioSession.type = on ? 'playback' : 'auto'; } catch (e) {}
+      return;
+    }
+    if (!/iP(hone|ad|od)|Macintosh/.test(navigator.userAgent) || !('ontouchend' in document)) return;
+    if (!unlock) {
+      // 0.1 s of silence, 8 kHz mono WAV.
+      var n = 800, b = new Uint8Array(44 + n), dv = new DataView(b.buffer);
+      [[0, 'RIFF'], [8, 'WAVEfmt '], [36, 'data']].forEach(function (p) {
+        for (var i = 0; i < p[1].length; i++) b[p[0] + i] = p[1].charCodeAt(i);
+      });
+      dv.setUint32(4, 36 + n, true); dv.setUint32(16, 16, true); dv.setUint16(20, 1, true);
+      dv.setUint16(22, 1, true); dv.setUint32(24, 8000, true); dv.setUint32(28, 8000, true);
+      dv.setUint16(32, 1, true); dv.setUint16(34, 8, true); dv.setUint32(40, n, true);
+      b.fill(128, 44);
+      unlock = document.createElement('audio');
+      unlock.src = URL.createObjectURL(new Blob([b], { type: 'audio/wav' }));
+      unlock.loop = true;
+      unlock.setAttribute('playsinline', '');
+      unlock.setAttribute('x-webkit-airplay', 'deny');
+    }
+    if (on) { var p = unlock.play(); if (p && p.catch) p.catch(function () {}); }
+    else unlock.pause();
+  }
+
   function setEnabled(on) {
+    playbackSession(on);
     if (on && !ctx && !init()) return false;
     enabled = on;
     if (!ctx) return enabled;
