@@ -54,7 +54,7 @@ h1 span{color:var(--line)}
 </div>
 <div id="hud" class="hide"><div class="box" id="score">0</div><div class="row"><div class="box coins" id="coins">0</div><button id="pauseBtn" aria-label="Pausa">II</button></div></div>
 <div id="alert" class="hide">¡TE VIERON PINTANDO EL TREN!<br><span>¡CORRE!</span></div>
-<div id="pause" class="layer hide"><h1>PAUSA</h1><div class="row"><button class="btn" id="resumeBtn">Seguir</button><button class="btn ghost" id="menuBtn">Menú</button></div></div>
+<div id="pause" class="layer hide"><h1>PAUSA</h1><div class="row"><button class="btn" id="resumeBtn">Seguir</button><button class="btn ghost" id="menuBtn">Menú</button></div><button class="btn ghost" id="muteBtn">Sonido: sí</button></div>
 <div id="over" class="layer hide">
   <h1>¡TE <span>ATRAPARON!</span></h1>
   <div class="sub">El guardia te alcanzó</div>
@@ -99,7 +99,7 @@ document.body.prepend(renderer.domElement);
 
 const scene = new THREE.Scene();
 const FOG = new THREE.Color(0xe08a5a);
-scene.fog = new THREE.Fog(FOG, 40, 150);
+scene.fog = new THREE.Fog(FOG, 35, 175);
 const camera = new THREE.PerspectiveCamera(62, 1, 0.1, 400);
 
 // cielo de atardecer
@@ -142,10 +142,19 @@ const trackTex = canvasTex(512, 512, (g, w, h) => {
   }
 }, [1, 12]);
 
-const windowTex = canvasTex(128, 256, (g, w, h) => {
-  g.fillStyle = '#fff'; g.fillRect(0, 0, w, h);
-  for (let y = 12; y < h; y += 32) for (let x = 10; x < w; x += 30) { const lit = Math.random() < .35; g.fillStyle = lit ? '#ffd28a' : '#3a3440'; g.fillRect(x, y, 16, 20); }
-}, [1, 1]);
+// ventanas: color de pared + máscara de ventanas encendidas (emisiva, brillan al atardecer)
+const windowTex = (() => {
+  const c = document.createElement('canvas'), e = document.createElement('canvas'); c.width = e.width = 128; c.height = e.height = 256;
+  const g = c.getContext('2d'), ge = e.getContext('2d');
+  g.fillStyle = '#fff'; g.fillRect(0, 0, 128, 256); ge.fillStyle = '#000'; ge.fillRect(0, 0, 128, 256);
+  for (let y = 12; y < 256; y += 32) for (let x = 10; x < 128; x += 30) {
+    const lit = Math.random() < .3; g.fillStyle = lit ? '#ffd28a' : '#3a3440'; g.fillRect(x, y, 16, 20);
+    g.fillStyle = 'rgba(255,255,255,.5)'; g.fillRect(x - 2, y + 20, 20, 3);
+    if (lit) { ge.fillStyle = '#ffc070'; ge.fillRect(x, y, 16, 20); }
+  }
+  const mk = cv => { const t = new THREE.CanvasTexture(cv); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 8; return t; };
+  const map = mk(c), emis = mk(e); map.colorSpace = emis.colorSpace = THREE.SRGBColorSpace; return { map, emis };
+})();
 const trainTex = canvasTex(1024, 256, (g, w, h) => {
   g.fillStyle = '#c8ccd0'; g.fillRect(0, 0, w, h); noise(g, w, h, 6000, .2, ['#888', '#fff']);
   g.fillStyle = '#D63B0C'; g.fillRect(0, h * .78, w, h * .1);
@@ -160,32 +169,95 @@ const trainFrontTex = canvasTex(256, 256, (g, w, h) => {
 });
 const barrierTex = canvasTex(256, 64, (g, w, h) => { for (let x = -64; x < w + 64; x += 48) { g.fillStyle = '#D63B0C'; g.beginPath(); g.moveTo(x, 0); g.lineTo(x + 24, 0); g.lineTo(x + 24 + 32, h); g.lineTo(x + 32, h); g.fill(); g.fillStyle = '#f3efe7'; g.beginPath(); g.moveTo(x + 24, 0); g.lineTo(x + 48, 0); g.lineTo(x + 80, h); g.lineTo(x + 56, h); g.fill(); } });
 
-// ---------- suelo de vías (se mueve con el jugador, la textura se desplaza)
+// ---------- viaducto: las vías cruzan la ciudad sobre un puente de concreto, con los edificios alrededor
+const GROUND_Y = -18;
+const concreteTex = canvasTex(256, 256, (g, w, h) => {
+  g.fillStyle = '#8c8580'; g.fillRect(0, 0, w, h); noise(g, w, h, 5000, .35, ['#6f6863', '#a29b94', '#5c5652']);
+  g.fillStyle = 'rgba(0,0,0,.14)'; for (let y = 0; y < h; y += 64) g.fillRect(0, y, w, 2);
+}, [1, 30]);
+const concreteMat = new THREE.MeshStandardMaterial({ map: concreteTex, roughness: .92 });
+const pierMat = new THREE.MeshStandardMaterial({ color: 0x7d7670, roughness: .95 });
 const track = new THREE.Mesh(new THREE.PlaneGeometry(7.8, 200), new THREE.MeshStandardMaterial({ map: trackTex, roughness: .9 }));
-track.rotation.x = -Math.PI / 2; track.receiveShadow = true; scene.add(track);
-const side = new THREE.Mesh(new THREE.PlaneGeometry(60, 200), new THREE.MeshStandardMaterial({ color: 0x4a3e40, roughness: 1 }));
-side.rotation.x = -Math.PI / 2; side.position.y = -0.02; side.receiveShadow = true; scene.add(side);
-
-// ---------- decorado reciclado (edificios, postes)
-const deco = [];
-const DECO_STEP = 12, DECO_N = 14;
-const bldColors = [0xb97d86, 0x6d6e74, 0x7fb6d1, 0xd9c7a8, 0x8a5a4a, 0x3c4a52];
-const bldGeo = new THREE.BoxGeometry(1, 1, 1);
-const poleGeo = new THREE.CylinderGeometry(.08, .08, 6, 6);
+track.rotation.x = -Math.PI / 2; track.position.y = 0.01; track.receiveShadow = true; scene.add(track);
+const deck = new THREE.Mesh(new THREE.BoxGeometry(9.3, 1.4, 200), concreteMat); deck.position.y = -0.7; deck.receiveShadow = true; scene.add(deck);
 const poleMat = new THREE.MeshStandardMaterial({ color: 0x2b2b2e, metalness: .6, roughness: .5 });
-function makeDeco(z) {
-  const g = new THREE.Group();
-  for (const s of [-1, 1]) {
-    const h = 8 + rnd() * 18, w = 6 + rnd() * 4;
-    const m = new THREE.MeshStandardMaterial({ color: pick(bldColors), map: windowTex, roughness: .85, emissive: 0x2a1a10, emissiveIntensity: .3 });
-    const b = new THREE.Mesh(bldGeo, m); b.scale.set(w, h, DECO_STEP - 1); b.position.set(s * (8 + w / 2 + rnd() * 3), h / 2, 0); b.receiveShadow = true; g.add(b);
-    const pole = new THREE.Mesh(poleGeo, poleMat); pole.position.set(s * 4.4, 3, -DECO_STEP / 2); g.add(pole);
-  }
-  g.position.z = z; scene.add(g); return g;
+// parapetos bajos y baranda: la vista hacia la ciudad queda abierta
+const edge = [];
+for (const s of [-1, 1]) {
+  const par = new THREE.Mesh(new THREE.BoxGeometry(.35, .55, 200), concreteMat); par.position.set(s * 4.5, .27, 0); par.castShadow = par.receiveShadow = true;
+  const rail = new THREE.Mesh(new THREE.BoxGeometry(.07, .07, 200), poleMat); rail.position.set(s * 4.5, 1.05, 0);
+  const lip = new THREE.Mesh(new THREE.BoxGeometry(.5, .25, 200), pierMat); lip.position.set(s * 4.75, -1.3, 0);
+  scene.add(par, rail, lip); edge.push(par, rail, lip);
 }
+// la avenida bajo el puente (con veredas y línea central) y el resto del suelo de la ciudad
+const streetTex = canvasTex(512, 512, (g, w, h) => {
+  g.fillStyle = '#2b2729'; g.fillRect(0, 0, w, h); noise(g, w, h, 6000, .4, ['#1d1a1c', '#3a3537', '#46403f']);
+  g.fillStyle = '#5a5354'; g.fillRect(0, 0, w * .14, h); g.fillRect(w * .86, 0, w * .14, h);
+  g.fillStyle = '#d9c27a'; for (let y = 0; y < h; y += 64) { g.fillRect(w * .33 - 3, y, 6, 30); g.fillRect(w * .67 - 3, y, 6, 30); }
+}, [1, 6]);
+const street = new THREE.Mesh(new THREE.PlaneGeometry(19, 200), new THREE.MeshStandardMaterial({ map: streetTex, roughness: .95 }));
+street.rotation.x = -Math.PI / 2; street.position.y = GROUND_Y; street.receiveShadow = true; scene.add(street);
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(420, 260), new THREE.MeshStandardMaterial({ color: 0x3a3236, roughness: 1 }));
+ground.rotation.x = -Math.PI / 2; ground.position.y = GROUND_Y - .05; scene.add(ground);
+const followers = [track, deck, street, ground, ...edge];
+
+// ---------- decorado reciclado: pilares, postes, edificios (desde la calle), azoteas
+const deco = [];
+const DECO_STEP = 14, DECO_N = 14;
+const bldMats = [0xb97d86, 0x6d6e74, 0x7fb6d1, 0xd9c7a8, 0x8a5a4a, 0x3c4a52, 0xc9a27a, 0x5d6b5a].map(c =>
+  new THREE.MeshStandardMaterial({ color: c, map: windowTex.map, emissive: 0xffffff, emissiveMap: windowTex.emis, emissiveIntensity: .55, roughness: .85 }));
+const roofMat = new THREE.MeshStandardMaterial({ color: 0x5b5458, roughness: .95 });
+const tankMat = new THREE.MeshStandardMaterial({ color: 0x9aa3a8, roughness: .5, metalness: .4 });
+const lampMat = new THREE.MeshStandardMaterial({ color: 0xffe2a0, emissive: 0xffc870, emissiveIntensity: 2 });
+const logoTex = new THREE.TextureLoader().load('../og-bandit/vb-logo.png'); logoTex.colorSpace = THREE.SRGBColorSpace;
+const signMat = new THREE.MeshStandardMaterial({ map: logoTex, transparent: true, emissive: 0xf3efe7, emissiveMap: logoTex, emissiveIntensity: .8 });
+const signBackMat = new THREE.MeshStandardMaterial({ color: 0x141215, roughness: .6 });
+const signGeo = new THREE.PlaneGeometry(8.4, 8.4 * 221 / 1200);
+const unitBox = new THREE.BoxGeometry(1, 1, 1), unitCyl = new THREE.CylinderGeometry(.5, .5, 1, 14), poleGeo = new THREE.CylinderGeometry(.08, .08, 6, 6);
+// caja con ventanas a escala de pisos (no estiradas): UV de cada cara según su tamaño; la azotea toma el color liso
+function buildingGeo(w, h, d) {
+  const g = new THREE.BoxGeometry(w, h, d), uv = g.attributes.uv;
+  const scale = [[d / 6, h / 24], [d / 6, h / 24], [0, 0], [0, 0], [w / 6, h / 24], [w / 6, h / 24]];
+  for (let i = 0; i < uv.count; i++) { const [su, sv] = scale[(i / 4) | 0]; uv.setXY(i, su ? uv.getX(i) * su : .01, sv ? uv.getY(i) * sv : .01); }
+  return g;
+}
+function add(g, geo, mat, x, y, z, sx = 1, sy = 1, sz = 1, shadow) { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.scale.set(sx, sy, sz); if (shadow) m.castShadow = true; m.receiveShadow = true; g.add(m); return m; }
+function fillDeco(g) {
+  for (const c of g.children.splice(0)) if (c.userData.own) c.geometry.dispose();
+  // pilares del viaducto y su viga
+  for (const s of [-1, 1]) add(g, unitCyl, pierMat, s * 2.9, (GROUND_Y - 1.4) / 2, 0, 1.6, -GROUND_Y - 1.4, 1.6);
+  add(g, unitBox, pierMat, 0, -1.9, 0, 9.3, 1, 1.6);
+  // postes de catenaria sobre el parapeto
+  for (const s of [-1, 1]) { const p = new THREE.Mesh(poleGeo, poleMat); p.position.set(s * 4.5, 3.55, -DECO_STEP / 2); g.add(p); }
+  // farolas de la avenida
+  for (const s of [-1, 1]) { add(g, poleGeo, poleMat, s * 8, GROUND_Y + 3, 3 * s); add(g, unitBox, lampMat, s * 7.6, GROUND_Y + 6, 3 * s, .6, .15, .3); }
+  // edificios a cada lado, desde la calle; algunos más bajos que el puente (se ven sus azoteas), otros muy por encima
+  for (const s of [-1, 1]) {
+    let x = 11.5 + rnd() * 3;
+    for (let k = 0; k < 2; k++) {
+      if (rnd() < .12) { x += 6; continue; }               // a veces una plaza o un lote vacío
+      const w = 6 + rnd() * 6, d = DECO_STEP - .6 - rnd() * 2, h = k ? 22 + rnd() * 42 : 5 + rnd() * (rnd() < .25 ? 30 : 16);
+      const b = new THREE.Mesh(buildingGeo(w, h, d), bldMats[(rnd() * bldMats.length) | 0]); b.userData.own = true;
+      b.position.set(s * (x + w / 2), GROUND_Y + h / 2, 0); b.receiveShadow = true; g.add(b);
+      const top = GROUND_Y + h;
+      add(g, unitBox, roofMat, s * (x + w / 2), top + .3, 0, w + .3, .6, d + .3);       // cornisa
+      if (rnd() < .55) { const tx = s * (x + w * (.25 + rnd() * .5)); add(g, unitCyl, tankMat, tx, top + 2.1, (rnd() - .5) * d * .5, 2, 2.2, 2, true); for (const lx of [-.6, .6]) add(g, unitBox, poleMat, tx + lx, top + .8, 0, .12, 1.2, .12); }
+      if (rnd() < .6) add(g, unitBox, tankMat, s * (x + w * (.3 + rnd() * .4)), top + .9, (rnd() - .5) * d * .6, 1.4, .9, 1.1, true);
+      if (rnd() < .4) add(g, poleGeo, poleMat, s * (x + w * .7), top + 3.6, -d * .3, .5, .9, .5);
+      if (k === 0 && top > -8 && top < 14 && rnd() < .25) {   // cartel VIDABANDIDA en la azotea, mirando a las vías
+        const sg = new THREE.Group(); sg.position.set(s * (x + 1.2), top + .6, 0); sg.rotation.y = -s * Math.PI / 2; g.add(sg);
+        add(sg, unitBox, signBackMat, 0, 2.2, -.12, 9, 2.4, .2);
+        const pl = new THREE.Mesh(signGeo, signMat); pl.position.set(0, 2.2, .01); sg.add(pl);
+        for (const lx of [-3.5, 3.5]) add(sg, unitBox, poleMat, lx, .5, -.2, .15, 1.1, .15);
+      }
+      x += w + .4 + rnd() * 2;
+    }
+  }
+}
+function makeDeco(z) { const g = new THREE.Group(); fillDeco(g); g.position.z = z; scene.add(g); return g; }
 // cables aéreos
 const wireMat = new THREE.LineBasicMaterial({ color: 0x1a1214 });
-for (const x of [-4.4, 4.4, -1.3, 1.3]) { const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(x, 5.8, 20), new THREE.Vector3(x, 5.8, -200)]), wireMat); scene.add(l); deco.wires = (deco.wires || []).concat(l); }
+for (const x of [-4.5, 4.5, -1.3, 1.3]) { const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(x, 6.3, 20), new THREE.Vector3(x, 6.3, -200)]), wireMat); scene.add(l); deco.wires = (deco.wires || []).concat(l); }
 
 // ---------- obstáculos y monedas
 const OB = { TRAIN: 0, LOW: 1, HIGH: 2 };
@@ -388,6 +460,62 @@ loader.load('../og-bandit/og-bandit.glb', async gltf => {
   ready();
 }, e => { if (e.total) $('loadBar').style.width = (100 * e.loaded / e.total) + '%'; }, err => { $('load').querySelector('.sub').textContent = 'No se pudo cargar el OG Bandit'; console.error(err); });
 
+// ---------- audio sintetizado con WebAudio: monedas, saltos, choque y trenes (rodar, traqueteo, bocina)
+const sfx = (() => {
+  let ctx, master, rumbleGain, rumblePan, clackT = 0, muted = store.get('ogr_mute', '0') === '1';
+  function init() {
+    if (ctx) { if (ctx.state === 'suspended') ctx.resume(); return; }
+    const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
+    ctx = new AC(); master = ctx.createGain(); master.gain.value = muted ? 0 : .55; master.connect(ctx.destination);
+    const len = ctx.sampleRate * 2, buf = ctx.createBuffer(1, len, ctx.sampleRate), d = buf.getChannelData(0);
+    let last = 0; for (let i = 0; i < len; i++) { last = (last + .02 * (Math.random() * 2 - 1)) / 1.02; d[i] = last * 3.5; }   // ruido marrón: el rodar
+    const src = ctx.createBufferSource(); src.buffer = buf; src.loop = true;
+    const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 420;
+    rumbleGain = ctx.createGain(); rumbleGain.gain.value = 0;
+    src.connect(lp).connect(rumbleGain);
+    if (ctx.createStereoPanner) { rumblePan = ctx.createStereoPanner(); rumbleGain.connect(rumblePan).connect(master); } else rumbleGain.connect(master);
+    src.start();
+  }
+  function tone(type, f, t0, dur, vol, f1, pan = 0) {
+    const o = ctx.createOscillator(), g = ctx.createGain(); o.type = type; o.frequency.setValueAtTime(f, t0);
+    if (f1) o.frequency.exponentialRampToValueAtTime(f1, t0 + dur);
+    g.gain.setValueAtTime(vol, t0); g.gain.exponentialRampToValueAtTime(.0008, t0 + dur);
+    let out = g; if (pan && ctx.createStereoPanner) { const p = ctx.createStereoPanner(); p.pan.value = pan; g.connect(p); out = p; }
+    o.connect(g); out.connect(master); o.start(t0); o.stop(t0 + dur + .03);
+  }
+  const now = () => ctx && ctx.currentTime;
+  return {
+    init,
+    coin() { if (!ctx) return; const t = now(); tone('square', 988, t, .075, .1); tone('square', 1319, t + .075, .32, .1); },   // si → mi: el "ding" de dos notas
+    jump() { if (!ctx) return; tone('square', 260, now(), .2, .07, 760); },
+    roll() { if (!ctx) return; tone('triangle', 240, now(), .22, .14, 80); },
+    crash() { if (!ctx) return; const t = now(); tone('sawtooth', 180, t, .55, .22, 40); tone('square', 95, t, .45, .18, 30); },
+    horn(pan) { if (!ctx) return; const t = now(); for (const f of [311, 370]) tone('sawtooth', f, t, 1.1, .05, f * .97, pan); },
+    // nivel 0..1 según qué tan cerca pasa el tren; pan según el lado
+    train(level, pan, dt, speed) {
+      if (!ctx) return; const t = now();
+      rumbleGain.gain.setTargetAtTime(level * .9, t, .08); rumblePan?.pan.setTargetAtTime(pan, t, .1);
+      clackT -= dt;
+      if (level > .08 && clackT <= 0) { tone('square', 75, t, .05, .2 * level, 50, pan); tone('square', 70, t + .09, .05, .2 * level, 48, pan); clackT = Math.max(.22, 9 / speed); }
+    },
+    toggle() { muted = !muted; store.set('ogr_mute', muted ? '1' : '0'); if (master) master.gain.value = muted ? 0 : .55; return muted; },
+    get muted() { return muted; }
+  };
+})();
+// trenes que pasan: el más cercano manda el rodar; los que vienen de frente tocan bocina una vez
+function trainAudio(dt) {
+  if (state !== 'play' || !player.alive) return sfx.train(0, 0, dt, speed || 15);
+  let level = 0, pan = 0;
+  for (const o of obstacles) {
+    if (o.type !== OB.TRAIN) continue;
+    const dz = player.z > o.z ? player.z - o.z : player.z < o.z - o.len ? o.z - o.len - player.z : 0;
+    const dx = LANES[o.lane] - player.x, d = Math.hypot(dz, dx * 2.5), l = Math.max(0, 1 - d / 34);
+    if (l > level) { level = l; pan = Math.max(-1, Math.min(1, dx / 4)); }
+    if (o.moving && !o.horned && o.z < player.z && o.z > player.z - 60) { o.horned = true; sfx.horn(Math.max(-1, Math.min(1, dx / 4))); }
+  }
+  sfx.train(level, pan, dt, speed);
+}
+
 // ---------- estado del juego
 let snapCam = true, state = 'load', speed, dist, coins, score, obstacles = [], coinList = [], nextRowZ, runPhase = 0, shake = 0, deathT = 0;
 const best = () => +store.get('ogr_best', 0);
@@ -395,13 +523,13 @@ const best = () => +store.get('ogr_best', 0);
 function clearWorld() {
   for (const o of obstacles) scene.remove(o.mesh); for (const c of coinList) scene.remove(c.mesh);
   obstacles = []; coinList = [];
-  for (const d of deco.splice(0, deco.length)) scene.remove(d);
 }
 function resetRun() {
   clearWorld();
   Object.assign(player, { lane: 1, x: 0, y: 0, vy: 0, z: 0, rollT: 0, grounded: true, alive: true, tilt: 0 });
   speed = 15; dist = 0; coins = 0; score = 0; nextRowZ = -40; deathT = 0;
-  for (let i = 0; i < DECO_N; i++) deco.push(makeDeco(20 - i * DECO_STEP));
+  if (!deco.length) for (let i = 0; i < DECO_N; i++) deco.push(makeDeco(20 - i * DECO_STEP));
+  else deco.forEach((d, i) => d.position.z = 20 - i * DECO_STEP);
 }
 
 // genera una fila: siempre deja al menos un carril transitable
@@ -426,8 +554,8 @@ function spawnRow(z) {
 
 // ---------- entrada
 const act = { left() { if (player.lane > 0) { player.lane--; player.tilt = 1; } }, right() { if (player.lane < 2) { player.lane++; player.tilt = -1; } },
-  up() { if (player.grounded) { player.vy = JUMP_V; player.grounded = false; player.rollT = 0; } },
-  down() { if (!player.grounded) player.vy = -22; player.rollT = ROLL_T; } };
+  up() { if (player.grounded) { player.vy = JUMP_V; player.grounded = false; player.rollT = 0; sfx.jump(); } },
+  down() { if (!player.grounded) player.vy = -22; player.rollT = ROLL_T; sfx.roll(); } };
 addEventListener('keydown', e => {
   if (state === 'menu' && (e.code === 'Space' || e.code === 'Enter')) return start();
   if (state === 'over' && (e.code === 'Space' || e.code === 'Enter')) return start();
@@ -466,7 +594,7 @@ function ready() {
   snapCam = true;
 }
 function toMenu() { $('alert').classList.add('hide'); state = 'menu'; show('menu'); $('bestMenu').textContent = best() ? 'Récord: ' + best() : ''; resetRun(); for (const b in rest) bones[b].quaternion.copy(rest[b]); idleAction?.reset().play(); danceAction?.stop(); }
-function start() { $('alert').classList.add('hide'); void $('alert').offsetWidth; $('alert').classList.remove('hide'); chase.gap = 1.6; resetRun(); snapCam = true; state = 'play'; show(null); idleAction?.stop(); danceAction?.stop(); }
+function start() { $('alert').classList.add('hide'); void $('alert').offsetWidth; $('alert').classList.remove('hide'); chase.gap = 1.6; resetRun(); shake = 0; playerRoot.rotation.set(0, 0, 0); snapCam = true; sfx.init(); state = 'play'; show(null); idleAction?.stop(); danceAction?.stop(); }
 function pause() { state = 'pause'; show('pause'); }
 function resume() { state = 'play'; show(null); }
 function gameOver() {
@@ -476,9 +604,12 @@ function gameOver() {
 }
 $('playBtn').onclick = start; $('againBtn').onclick = start; $('menuBtn').onclick = toMenu; $('menuBtn2').onclick = toMenu;
 $('pauseBtn').onclick = e => { e.stopPropagation(); pause(); }; $('resumeBtn').onclick = resume;
+const muteLabel = () => $('muteBtn').textContent = 'Sonido: ' + (sfx.muted ? 'no' : 'sí'); muteLabel();
+$('muteBtn').onclick = () => { sfx.toggle(); muteLabel(); };
+addEventListener('keydown', e => { if (e.code === 'KeyM') { sfx.toggle(); muteLabel(); } });
 
 // ---------- simulación
-function crash() { player.alive = false; deathT = 0; shake = 0.5; }
+function crash() { player.alive = false; deathT = 0; shake = reduceMotion ? 0 : 0.5; sfx.crash(); }
 function step(dt) {
   if (state !== 'play') return;
   chase.gap += ((player.alive ? 16 : 1.1) - chase.gap) * Math.min(1, dt * (player.alive ? 0.18 : 3));
@@ -507,20 +638,21 @@ function step(dt) {
     if (o.type === OB.HIGH && player.y + top > o.yMin) return crash();
   }
   for (let i = coinList.length - 1; i >= 0; i--) { const c = coinList[i];
-    if (c.lane === pLane && Math.abs(c.z - player.z) < 0.9 && Math.abs(c.mesh.position.y - (player.y + 0.9)) < 1.3) { coins++; scene.remove(c.mesh); coinList.splice(i, 1); } }
+    if (c.lane === pLane && Math.abs(c.z - player.z) < 0.9 && Math.abs(c.mesh.position.y - (player.y + 0.9)) < 1.3) { coins++; scene.remove(c.mesh); coinList.splice(i, 1); sfx.coin(); } }
   // limpiar lo que quedó atrás y reciclar decorado
   obstacles = obstacles.filter(o => { if (o.z - o.len > player.z + 15) { scene.remove(o.mesh); return false; } return true; });
   coinList = coinList.filter(c => { if (c.z > player.z + 10) { scene.remove(c.mesh); return false; } return true; });
-  for (const d of deco) if (d.position.z > player.z + 25) d.position.z -= DECO_N * DECO_STEP;
+  for (const d of deco) if (d.position.z > player.z + 25) { d.position.z -= DECO_N * DECO_STEP; fillDeco(d); }
 }
 
 // ---------- render
-const clock = new THREE.Clock(); let acc = 0;
+const clock = new THREE.Clock();
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const camPos = new THREE.Vector3(0, 4.2, 7.5);
 function frame() {
   requestAnimationFrame(frame);
   const dt = Math.min(clock.getDelta(), 0.1);
-  if (state === 'play') { acc += dt; while (acc >= 1 / 60) { step(1 / 60); acc -= 1 / 60; } } else acc = 0;
+  if (state === 'play') { let rem = dt; while (rem > 1e-6) { const h = Math.min(rem, 1 / 60); step(h); rem -= h; } }
   if (model) {
     playerRoot.position.set(player.x, player.y, player.z);
     if (state === 'play' && player.alive) {
@@ -541,10 +673,11 @@ function frame() {
   if (shake > 0) { camera.position.x += (Math.random() - .5) * shake; camera.position.y += (Math.random() - .5) * shake; shake = Math.max(0, shake - dt); }
   camera.lookAt(player.x * (menuCam ? 1 : .8) + (menuCam ? (innerWidth > innerHeight ? -2.2 : -0.6) : 0), menuCam ? (innerWidth > innerHeight ? 1.1 : 0.4) : 1.2 + player.y * .3, player.z - (menuCam ? 0 : 7));
   // suelo, sol y cables siguen al jugador
-  track.position.z = side.position.z = player.z - 80; trackTex.offset.y = -(player.z - 80) * 12 / 200;
+  for (const f of followers) f.position.z = player.z - 80; trackTex.offset.y = -(player.z - 80) * 12 / 200; concreteTex.offset.y = -(player.z - 80) * 30 / 200; streetTex.offset.y = -(player.z - 80) * 6 / 200;
   sun.position.set(player.x + 10, 22, player.z + 8); sun.target.position.set(player.x, 0, player.z - 8);
   for (const w of deco.wires) w.position.z = Math.floor(player.z / 100) * 100;
   for (const c of coinList) c.mesh.rotation.y += dt * 3;
+  trainAudio(dt);
   guard.visible = state === 'play' || state === 'pause' || state === 'over';
   guard.position.set(player.x, 0, player.z + chase.gap);
   if (state === 'play') { const gs = Math.sin(runPhase * .9); guard.userData.legs[0].rotation.x = gs * .8; guard.userData.legs[1].rotation.x = -gs * .8; guard.position.y = Math.abs(gs) * .06; }
@@ -554,7 +687,7 @@ function frame() {
 }
 if (Q.has('debug')) window.__bones = () => { model.updateMatrixWorld(true); const out = {}; const v = new THREE.Vector3(), q = new THREE.Quaternion();
   for (const n in bones) { bones[n].getWorldQuaternion(q); const r = x => x.toArray().map(k => +k.toFixed(2)); out[n] = { X: r(v.set(1,0,0).applyQuaternion(q)), Y: r(v.set(0,1,0).applyQuaternion(q)), Z: r(v.set(0,0,1).applyQuaternion(q)), pos: r(bones[n].getWorldPosition(v)) }; } return out; };
-if (Q.has('debug')) window.__g = () => ({ state, cam: camera.position.toArray().map(Math.round), p: [player.x, player.y, Math.round(player.z), player.alive], track: track.position.z, side: side.position.z });
+if (Q.has('debug')) window.__g = () => ({ state, cam: camera.position.toArray().map(Math.round), p: [player.x, player.y, Math.round(player.z), player.alive], track: track.position.z });
 frame();
 </script>
 </body>
