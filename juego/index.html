@@ -466,7 +466,12 @@ const sfx = (() => {
   function init() {
     if (ctx) { if (ctx.state === 'suspended') ctx.resume(); return; }
     const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
-    ctx = new AC(); master = ctx.createGain(); master.gain.value = muted ? 0 : .55; master.connect(ctx.destination);
+    // Safari: pedir sesión de reproducción (suena aunque el iPhone esté en silencio), reanudar dentro del toque
+    // y tocar un búfer mudo para desbloquear la salida
+    try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) {}
+    ctx = new AC(); ctx.resume?.();
+    { const b = ctx.createBufferSource(); b.buffer = ctx.createBuffer(1, 1, 22050); b.connect(ctx.destination); b.start(0); }
+    master = ctx.createGain(); master.gain.value = muted ? 0 : .55; master.connect(ctx.destination);
     const len = ctx.sampleRate * 2, buf = ctx.createBuffer(1, len, ctx.sampleRate), d = buf.getChannelData(0);
     let last = 0; for (let i = 0; i < len; i++) { last = (last + .02 * (Math.random() * 2 - 1)) / 1.02; d[i] = last * 3.5; }   // ruido marrón: el rodar
     const src = ctx.createBufferSource(); src.buffer = buf; src.loop = true;
@@ -502,6 +507,8 @@ const sfx = (() => {
     get muted() { return muted; }
   };
 })();
+// el audio se desbloquea con el primer toque o tecla, en cualquier parte
+for (const ev of ['pointerdown', 'touchend', 'keydown']) addEventListener(ev, () => sfx.init(), { passive: true });
 // trenes que pasan: el más cercano manda el rodar; los que vienen de frente tocan bocina una vez
 function trainAudio(dt) {
   if (state !== 'play' || !player.alive) return sfx.train(0, 0, dt, speed || 15);
