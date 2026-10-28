@@ -1,12 +1,14 @@
 /**
  * The door pair: two stainless leaves, each with a window, rubber leading edges, sliding into
  * pockets behind the wall lining. set(left, right) takes 0 (closed) .. 1 (open) per leaf.
+ * centerX: where along the wall (defaults to the doors you sit facing; the other pairs stay shut).
  */
 import * as THREE from 'three';
 import { CAR, DOOR_TAG } from '../config.js';
 import { roundedRect, tracker } from '../geo.js';
 
-export function createDoors(mats, registry) {
+export function createDoors(mats, registry, centerX) {
+  var cx0 = centerX == null ? CAR.doorCenterX : centerX;
   var keep = tracker(registry);
   var group = new THREE.Group();
   group.name = 'doors';
@@ -103,15 +105,15 @@ export function createDoors(mats, registry) {
   var left = buildLeaf(-1);
   var right = buildLeaf(1);
   var z = -0.075;
-  var closedLeft = CAR.doorCenterX - leafW / 2;
-  var closedRight = CAR.doorCenterX + leafW / 2;
+  var closedLeft = cx0 - leafW / 2;
+  var closedRight = cx0 + leafW / 2;
   left.position.set(closedLeft, 0, z);
   right.position.set(closedRight, 0, z);
   group.add(left, right);
 
   // Threshold plate: grooved steel the leaves ride in.
   var sill = new THREE.Mesh(keep(new THREE.BoxGeometry(CAR.doorWidth + 0.06, 0.012, 0.2)), mats.steelDark);
-  sill.position.set(CAR.doorCenterX, 0.006, -0.04);
+  sill.position.set(cx0, 0.006, -0.04);
   group.add(sill);
 
   function set(l, r) {

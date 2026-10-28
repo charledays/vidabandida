@@ -6,7 +6,7 @@
  * slides as the passenger's head moves.
  */
 import * as THREE from 'three';
-import { CAR } from '../config.js';
+import { CAR } from '../config.js?v=20261028a';
 import { tracker, textCanvas, canvasTexture } from '../geo.js';
 import { rng } from '../materials.js';
 import { web } from '../web.js';
@@ -196,7 +196,7 @@ function paintCard(ctx, img, x, y, w, h, rand, opts) {
   drawClips(ctx, x, y, w, h, frame);
 }
 
-function stripTexture(registry, widthM, heightM, art) {
+function stripTexture(registry, widthM, heightM, art, shift) {
   var w = Math.min(4096, Math.round(widthM * PX_PER_M));
   var h = Math.round(heightM * PX_PER_M);
   var scale = w / widthM;
@@ -216,7 +216,7 @@ function stripTexture(registry, widthM, heightM, art) {
   art.forEach(function (src, n) {
     var img = new Image();
     img.onload = function () {
-      for (var i = n; i < slots.length; i += art.length) {
+      for (var i = (n + shift) % art.length; i < slots.length; i += art.length) {
         // The strip dims toward its ends.
         var ends = Math.abs((slots[i] + cardW / 2) / w - 0.5) * 2;
         paintCard(ctx, img, slots[i], 0, cardW, h, rng(97 + i * 13), {
@@ -264,33 +264,40 @@ export function createAdStrip(mats, registry, shell, art) {
   var keep = tracker(registry);
   var group = new THREE.Group();
   group.name = 'ad-strip';
-  var stripW = CAR.wallX1 - CAR.wallX0;
-  var geo = keep(new THREE.PlaneGeometry(stripW, shell.cove.length));
-
-  // Prints: unlit and untoned so the art keeps its punch from the seat.
-  var printMat = new THREE.MeshBasicMaterial({ map: stripTexture(registry, stripW, shell.cove.length, art), toneMapped: false });
-  var prints = new THREE.Mesh(geo, printMat);
-
-  // Acrylic glare on top, added light only.
-  var glare = glareTexture(registry);
   var glareSpan = 1.7;
-  glare.repeat.set(stripW / glareSpan, 1);
-  var glareMat = new THREE.MeshBasicMaterial({
-    map: glare, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false, opacity: 0.85
-  });
-  var acrylic = new THREE.Mesh(geo, glareMat);
-  acrylic.renderOrder = 3;
-  registry.materials.push(printMat, glareMat);
+  var glares = [];
 
-  [prints, acrylic].forEach(function (m, k) {
-    m.position.set((CAR.wallX0 + CAR.wallX1) / 2, shell.cove.y, shell.cove.z + 0.004 + k * 0.003);
-    m.rotation.x = shell.cove.tilt;
-    group.add(m);
+  // The strip in front of the seat, then the runs on along the car toward each end: their own
+  // textures, so the one in view keeps its resolution; shifted so the art doesn't repeat at a seam.
+  [[CAR.wallX0, CAR.wallX1, 0], [CAR.endX0, CAR.wallX0, 3], [CAR.wallX1, CAR.endX1, 5]].forEach(function (span) {
+    var stripW = span[1] - span[0];
+    var geo = keep(new THREE.PlaneGeometry(stripW, shell.cove.length));
+
+    // Prints: unlit and untoned so the art keeps its punch from the seat.
+    var printMat = new THREE.MeshBasicMaterial({ map: stripTexture(registry, stripW, shell.cove.length, art, span[2]), toneMapped: false });
+    var prints = new THREE.Mesh(geo, printMat);
+
+    // Acrylic glare on top, added light only.
+    var glare = glareTexture(registry);
+    glare.repeat.set(stripW / glareSpan, 1);
+    glares.push({ tex: glare, x0: span[0] - CAR.wallX0 });
+    var glareMat = new THREE.MeshBasicMaterial({
+      map: glare, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false, opacity: 0.85
+    });
+    var acrylic = new THREE.Mesh(geo, glareMat);
+    acrylic.renderOrder = 3;
+    registry.materials.push(printMat, glareMat);
+
+    [prints, acrylic].forEach(function (m, k) {
+      m.position.set((span[0] + span[1]) / 2, shell.cove.y, shell.cove.z + 0.004 + k * 0.003);
+      m.rotation.x = shell.cove.tilt;
+      group.add(m);
+    });
   });
 
   /** The glare is a reflection of fixed tubes: it slides when the head moves, not with the train. */
   function update(cameraX) {
-    glare.offset.x = (cameraX * 1.6) / glareSpan;
+    glares.forEach(function (g) { g.tex.offset.x = (cameraX * 1.6 + g.x0) / glareSpan; });
   }
 
   return { group: group, update: update };

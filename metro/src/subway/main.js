@@ -13,20 +13,20 @@
  * No part talks to another; they all read the same state object.
  */
 import * as THREE from 'three';
-import { CAR, WORLD, LEG, CRUISE_SPEED, START, START_CLOSED, DOOR_WALK } from './config.js';
+import { CAR, WORLD, LEG, CRUISE_SPEED, START, START_CLOSED, DOOR_WALK } from './config.js?v=20261028a';
 import { stations, mapStops, adArt, bandidajeFino } from './stations.js?v=20261021';
 import { createTimeline } from './timeline.js';
 import { createScroll } from './scroll.js?v=20261020';
 import { createJourney } from './journey.js';
 import { stationContent } from './content.js';
 import { createMaterials } from './materials.js';
-import { createDoors } from './carriage/doors.js';
-import { createShell } from './carriage/shell.js';
+import { createDoors } from './carriage/doors.js?v=20261028a';
+import { createShell } from './carriage/shell.js?v=20261028a';
 import { createSeats } from './carriage/seats.js';
 import { createSignage } from './carriage/signage.js?v=20261019c';
 import { createLighting } from './carriage/lighting.js';
 import { createLineMap } from './carriage/line-map.js';
-import { createAdStrip, createPanelAd } from './carriage/ad-strip.js';
+import { createAdStrip, createPanelAd } from './carriage/ad-strip.js?v=20261028a';
 import { createTunnel } from './exterior/tunnel.js';
 import { buildStation } from './exterior/station.js?v=20261020';
 import { createCameraRig } from './camera-rig.js';
@@ -113,10 +113,14 @@ function start() {
   // Carriage.
   var shell = createShell(mats, registry);
   var doors = createDoors(mats, registry);
+  // The door pairs further along the car: scenery, always shut.
+  var moreDoors = new THREE.Group();
+  moreDoors.name = 'more-doors';
+  CAR.moreDoors.forEach(function (x) { moreDoors.add(createDoors(mats, registry, x).group); });
   var seats = createSeats(mats, registry, [
     { x0: CAR.seat.x0, count: CAR.seat.count, dir: 1 },
     { x0: CAR.doorCenterX - CAR.doorWidth / 2 - CAR.doorTravel - 0.18, count: 6, dir: -1 }
-  ]);
+  ].concat(CAR.moreSeats));
   var signage = createSignage(mats, registry, shell, stations);
   var lineMap = createLineMap(mats, registry, mapStops);
   var adStrip = createAdStrip(mats, registry, shell, adArt);
@@ -126,7 +130,7 @@ function start() {
     position: [CAR.doorCenterX + CAR.doorWidth / 2 + (CAR.doorTravel + 0.05) / 2, 0.33, 0.018]
   });
   scene.add(eyeAd.group);
-  scene.add(shell.group, doors.group, seats.group, signage.group, lineMap.group, adStrip.group);
+  scene.add(shell.group, doors.group, moreDoors, seats.group, signage.group, lineMap.group, adStrip.group);
   var lighting = createLighting(scene);
 
   // Outside.
@@ -339,7 +343,7 @@ function start() {
     var ray = new THREE.Raycaster();
     var ndc = new THREE.Vector2();
     var benchTags = signage.tags.filter(function (m) { return m.userData.link; });
-    var blockers = [shell.group, seats.group, doors.group];
+    var blockers = [shell.group, seats.group, doors.group, moreDoors];
     function candidates() {
       var view = currentView();
       return view && view.linkTags ? benchTags.concat(view.linkTags) : benchTags;
@@ -877,7 +881,7 @@ function start() {
     leaves: doors.leaves,
     leafFront: doors.leafFront,
     // Everything in the car takes paint except the floor; the signs and ads just catch it.
-    surfaces: [shell.group, seats.group, doors.group],
+    surfaces: [shell.group, seats.group, doors.group, moreDoors],
     unpaintable: [mats.floor],
     noPaint: [lineMap.group, signage.group, adStrip.group],
     // The station walls, through the open doors and out on the platform.

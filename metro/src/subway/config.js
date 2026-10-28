@@ -19,6 +19,15 @@ export var CAR = {
   /** Wall extents we actually build (only what the camera can see). */
   wallX0: -5.2,
   wallX1: 5.4,
+  /**
+   * The car runs on past that: another door pair and window either way, out to an end bulkhead,
+   * so a look along the car meets more car instead of the platform. Those doors stay shut.
+   */
+  endX0: -12,
+  endX1: 12,
+  moreDoors: [-6.64, 6.65],
+  moreWindows: [{ x0: -9.91, x1: -8.21 }, { x0: 8.22, x1: 9.92 }],
+  moreSeats: [{ x0: -8.075, count: 8, dir: -1 }, { x0: 8.1, count: 8, dir: 1 }],
   wallTop: 1.94,
   ceilingY: 2.3,
   aisleDepth: 2.9,
